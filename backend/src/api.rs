@@ -141,3 +141,4 @@ pub async fn admin_update_platforms(
 
     Ok(Json(json!({ "platforms": saved })))
 }
+

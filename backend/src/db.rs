@@ -27,6 +27,7 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
             followers INTEGER NOT NULL DEFAULT 0,
             updated_at INTEGER NOT NULL
         );
+
         "#,
     )?;
     seed(conn)
@@ -40,6 +41,10 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
         ("about", "I build games and stream the process on Twitch."),
         ("email", "hello@rython.dev"),
         ("profile_image_url", "/images/pfp_new_medium.webp"),
+        (
+            "services",
+            "Sponsored content\nProduct reviews\nLivestream integrations\nSocial media campaigns\nBrand partnerships\nEvent appearances",
+        ),
     ];
 
     for (key, value) in content_defaults {
@@ -138,3 +143,4 @@ pub fn upsert_platforms(conn: &Connection, platforms: &[PlatformInput]) -> rusql
 
     Ok(())
 }
+
