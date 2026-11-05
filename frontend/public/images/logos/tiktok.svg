@@ -1,0 +1,29 @@
+<svg
+    width="48"
+    height="48"
+    viewBox="0 0 48 48"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+>
+    <defs>
+        <path
+            id="note"
+            d="M369 377C165 377 0 520 0 704C0 880 143 1031 320 1031C497 1031 638 880 638 704L638 347C700 400 790 425 878 432L878 252C740 240 650 120 638 0L462 0L462 720C462 810 390 890 301 890C213 890 140 818 140 729C140 640 215 567 300 567L369 567Z"
+        ></path>
+        <clipPath id="noteClip">
+            <use href="#note"></use>
+        </clipPath>
+    </defs>
+    <rect
+        width="48"
+        height="48"
+        rx="24"
+        fill="#000000"></rect>
+    <g transform="translate(13.72 12) scale(0.024)">
+        <use href="#note" fill="#25F4EE"></use>
+        <use href="#note" fill="#FE2C55" transform="translate(41 43)"></use>
+        <g clip-path="url(#noteClip)">
+            <use href="#note" fill="#FFFFFF" transform="translate(41 43)"></use>
+        </g>
+    </g>
+</svg>
