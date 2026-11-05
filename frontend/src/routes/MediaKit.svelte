@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { fetchMediaKit } from "../lib/api";
-    import type { MediaKit, Platform } from "../lib/types";
+    import type { MediaKit } from "../lib/types";
     import Card from "../components/Card.svelte";
+    import Collabs from "../components/Collabs.svelte";
 
     let data = $state<MediaKit | null>(null);
     let error = $state("");
@@ -186,6 +187,7 @@
                 <div class="text-white font-bold text-4xl mb-2">
                     Collaborations
                 </div>
+                <Collabs />
             </div>
         </div>
     </main>
