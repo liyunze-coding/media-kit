@@ -39,6 +39,7 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
         ("tagline", "Game developer & live streamer"),
         ("about", "I build games and stream the process on Twitch."),
         ("email", "hello@rython.dev"),
+        ("profile_image_url", "/images/pfp_new_medium.webp"),
     ];
 
     for (key, value) in content_defaults {

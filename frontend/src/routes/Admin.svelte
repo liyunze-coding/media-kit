@@ -187,6 +187,20 @@
                   rows="4"
                   bind:value={content[key]}
                 ></textarea>
+              {:else if key === 'profile_image_url'}
+                <div class="flex items-start gap-4">
+                  <input
+                    class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+                    bind:value={content[key]}
+                  />
+                  {#if content[key]}
+                    <img
+                      class="h-16 w-16 shrink-0 rounded-full border border-gray-200 object-cover dark:border-zinc-800"
+                      src={content[key]}
+                      alt="Profile preview"
+                    />
+                  {/if}
+                </div>
               {:else}
                 <input
                   class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"

@@ -28,6 +28,10 @@ Copy `.env.example` to `.env` and fill in your values:
 cp .env.example .env
 ```
 
+> **Note:** values containing `$` must be single-quoted, otherwise the backend's
+> dotenv loader will try to expand them as variables. For example:
+> `ADMIN_PASSWORD='p@$$w0rd!'`
+
 | Variable | Description | Default |
 | --- | --- | --- |
 | `TWITCH_CLIENT_ID` | Twitch Helix API client ID | empty |
@@ -39,40 +43,51 @@ cp .env.example .env
 | `DATABASE_PATH` | SQLite database file path | `data/media_kit.db` |
 | `STATIC_DIR` | Directory containing the built frontend | `frontend/dist` |
 
-## Local development
+## Local development (no Docker)
 
-### 1. Backend
-
-```bash
-cd backend
-cargo run
-```
-
-### 2. Frontend
+The quickest way is the root `dev` script, which starts the backend and the Vite
+dev server together:
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
 
+- Backend (Rust/Axum) → <http://localhost:3000>
+- Frontend (Vite) → <http://localhost:5173>
+
 The Vite dev server proxies `/api` requests to `http://localhost:3000`.
 
-## Production build
+If you prefer two terminals, run them separately:
 
 ```bash
-cd frontend
-npm install
-npm run build
+# terminal 1
+npm run dev:backend
 
-cd ../backend
-cargo build --release
+# terminal 2
+npm run dev:frontend
 ```
 
-Then run the backend with the frontend build directory:
+> Rust is required for the backend. If `cargo` is not found, add
+> `%USERPROFILE%\.cargo\bin` to your `PATH` (Windows) or `~/.cargo/bin`
+> (macOS/Linux).
+
+## Production build (no Docker)
 
 ```bash
-STATIC_DIR=../frontend/dist ./backend/target/release/backend
+npm install
+npm run build
+npm start
+```
+
+This builds the frontend to `frontend/dist`, compiles the backend, and serves the
+whole app (static site + API) from <http://localhost:3000>.
+
+The SQLite database is written to `data/media_kit.db` and static files are read
+from `frontend/dist` by default. Override them if needed:
+
+```bash
+DATABASE_PATH=./data/media_kit.db STATIC_DIR=./frontend/dist npm start
 ```
 
 ## Docker
@@ -81,7 +96,7 @@ STATIC_DIR=../frontend/dist ./backend/target/release/backend
 docker compose up --build
 ```
 
-The app is then available at <http://localhost:3001>. The SQLite database is persisted
+The app is then available at <http://localhost:3000>. The SQLite database is persisted
 in the `media-kit-data` Docker volume.
 
 ## API

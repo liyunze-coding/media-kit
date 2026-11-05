@@ -19,9 +19,26 @@ fn env_or(key: &str, default: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| default.to_string())
 }
 
+/// Load `.env` from the current directory, then walk up parent directories
+/// until one is found. This lets `cargo run` from `backend/` pick up the
+/// repository-root `.env` without Docker.
+fn load_env_file() {
+    let mut dir = std::env::current_dir().unwrap_or_default();
+    loop {
+        let candidate = dir.join(".env");
+        if candidate.exists() {
+            dotenvy::from_path(&candidate).ok();
+            return;
+        }
+        if !dir.pop() {
+            return;
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().ok();
+    load_env_file();
 
     let db_path = env_or("DATABASE_PATH", "data/media_kit.db");
     if let Some(parent) = std::path::Path::new(&db_path).parent() {

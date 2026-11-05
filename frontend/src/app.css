@@ -1,1 +1,38 @@
 @import "tailwindcss";
+
+@font-face {
+	font-family: "Fredoka";
+	src: url("/fonts/Fredoka-Regular.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Antonio";
+	src: url("/fonts/Antonio-Bold.ttf") format("truetype");
+	font-weight: bold;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Montserrat Fonts */
+@font-face {
+	font-family: "Montserrat";
+	src: url("/fonts/Montserrat-Bold.ttf") format("truetype");
+	font-weight: bold;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "Montserrat";
+	src: url("/fonts/Montserrat-Regular.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+html, body {
+    font-family: Montserrat;
+}

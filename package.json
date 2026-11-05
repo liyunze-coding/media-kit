@@ -1,4 +1,11 @@
 {
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "cargo run --manifest-path backend/Cargo.toml",
+    "build": "npm --prefix frontend run build && cargo build --manifest-path backend/Cargo.toml",
+    "start": "cargo run --manifest-path backend/Cargo.toml"
+  },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.4",
     "tailwindcss": "^4.3.4"
