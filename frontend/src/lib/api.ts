@@ -83,3 +83,4 @@ export async function updatePlatforms(
   const data = await res.json();
   return data.platforms;
 }
+
