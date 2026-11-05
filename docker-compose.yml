@@ -2,7 +2,7 @@ services:
   media-kit:
     build: .
     ports:
-      - "3000:3000"
+      - "8081:3000"
     environment:
       TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
       TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}

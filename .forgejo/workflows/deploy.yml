@@ -1,0 +1,32 @@
+name: Deploy Media Kit
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    deploy:
+        runs-on: native
+        steps:
+            - name: Checkout code
+              uses: https://data.forgejo.org/actions/checkout@v4
+
+            - name: Create .env from secrets
+              run: |
+                  cat > .env << EOF
+                  TWITCH_CLIENT_ID=${{ secrets.TWITCH_CLIENT_ID }}
+                  TWITCH_CLIENT_SECRET=${{ secrets.TWITCH_CLIENT_SECRET }}
+                  TWITCH_LOGIN=${{ secrets.TWITCH_LOGIN }}
+                  ADMIN_USER=${{ secrets.ADMIN_USER }}
+                  ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+                  EOF
+                  chmod 600 .env
+
+            - name: Build and deploy
+              run: |
+                  echo "Starting Docker Compose..."
+                  docker compose up -d --build --force-recreate --remove-orphans
+
+                  echo "Cleaning up..."
+                  docker image prune -f

@@ -1,0 +1,29 @@
+name: CI
+
+# pull_request_target always runs this file from the base branch. A pull request
+# cannot replace these steps, which is what `pull_request` would allow after
+# someone clicks Approve on a fork.
+#
+# Forks are not built until a maintainer adds the `ci` label. Review Dockerfile,
+# the frontend package files, and the backend Cargo files before adding it. New
+# commits do not reuse that label; remove it and add it again after reviewing.
+on:
+    pull_request_target:
+        types: [opened, synchronize, reopened, labeled]
+
+jobs:
+    check:
+        if: |
+            forgejo.event.pull_request.head.repo.full_name == forgejo.repository ||
+            (forgejo.event.action == 'label_updated' && forgejo.event.label.name == 'ci')
+        runs-on: native
+        steps:
+            - name: Checkout pull request
+              uses: https://data.forgejo.org/actions/checkout@v4
+              with:
+                  repository: ${{ forgejo.event.pull_request.head.repo.full_name }}
+                  ref: ${{ forgejo.event.pull_request.head.sha }}
+                  persist-credentials: false
+
+            - name: Build application image
+              run: docker build --pull --tag media-kit:ci .
