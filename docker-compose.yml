@@ -1,0 +1,20 @@
+services:
+  media-kit:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID:-}
+      TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET:-}
+      TWITCH_LOGIN: ${TWITCH_LOGIN:-rythondev}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      PORT: "3000"
+      DATABASE_PATH: /app/data/media_kit.db
+      STATIC_DIR: /app/frontend/dist
+    volumes:
+      - media-kit-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  media-kit-data:
