@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { fetchMediaKit } from "../lib/api";
     import type { MediaKit, Platform } from "../lib/types";
+    import Card from "../components/Card.svelte";
 
     let data = $state<MediaKit | null>(null);
     let error = $state("");
@@ -19,11 +20,28 @@
     let twitch = $derived(data?.twitch);
     // let twitchLogin = $derived(twitch?.login ?? "");
 
-    let platformImageMap: Record<string, string> = {
-        twitch: "/images/logos/twitch.svg",
-        youtube: "/images/logos/youtube.svg",
-        instagram: "/images/logos/instagram.svg",
-        tiktok: "/images/logos/tiktok.svg",
+    type platformDecoType = {
+        image: string;
+        color?: string | null;
+    };
+
+    let platformImageMap: Record<string, platformDecoType> = {
+        twitch: {
+            image: "/images/logos/twitch.svg",
+            color: "#8E60F5",
+        },
+        youtube: {
+            image: "/images/logos/youtube.svg",
+            color: "#FF0000",
+        },
+        instagram: {
+            image: "/images/logos/instagram.svg",
+            color: "#E1306C",
+        },
+        tiktok: {
+            image: "/images/logos/tiktok.svg",
+            color: "#FFFFFF",
+        },
     };
     function formatCount(value: number | undefined | null): string {
         if (value == null) return "—";
@@ -52,30 +70,33 @@
         <div class="py-8 text-gray-500 dark:text-gray-400">Loading…</div>
     </main>
 {:else}
-    <main class="grid grid-cols-2 max-w-6xl mx-auto pt-20">
+    <main class="grid grid-cols-2 max-w-6xl mx-auto pt-20 pb-10">
         <div class="">
             <div class="px-5">
-                {#if content.profile_image_url}
-                    <img
-                        class="shrink-0 rounded-xl w-full object-cover shadow-cyan-300 shadow-lg"
-                        src={content.profile_image_url}
-                        alt={content.brand_name ?? "Profile image"}
-                        width="300"
-                    />
-                {/if}
+                <div class="flex justify-end items-start">
+                    {#if content.profile_image_url}
+                        <img
+                            class="shrink-0 rounded-xl object-cover shadow-cyan-300 shadow-lg"
+                            src={content.profile_image_url}
+                            alt={content.brand_name ?? "Profile image"}
+                            width="300"
+                        />
+                    {/if}
+                </div>
                 <div class="mt-6 grid grid-cols-2 gap-4">
                     <!-- Twitch -->
-                    <a
-                        class="flex flex-col gap-1 rounded-2xl border border-gray-200 bg-neutral-50 p-5 transition-colors hover:border-violet-600 dark:border-zinc-800 dark:bg-neutral-900 dark:hover:border-violet-400"
+                    <Card
+                        className="flex flex-col gap-1 rounded-2xl border p-5 transition-colors border-zinc-800 bg-neutral-900"
                         href={`https://twitch.tv/${twitch?.login}`}
                         target="_blank"
                         rel="noreferrer"
+                        color={platformImageMap["twitch"].color}
                     >
                         <div
                             class="flex flex-row justify-start items-start gap-3"
                         >
                             <img
-                                src={platformImageMap["twitch"]}
+                                src={platformImageMap["twitch"].image}
                                 alt="Twitch"
                                 width="40"
                             />
@@ -97,19 +118,20 @@
                                 </div>
                             </div>
                         </div>
-                    </a>
+                    </Card>
                     {#each platforms as platform (platform.name)}
-                        <a
-                            class="flex flex-col gap-1 rounded-2xl border border-gray-200 bg-neutral-50 p-5 transition-colors hover:border-violet-600 dark:border-zinc-800 dark:bg-neutral-900 dark:hover:border-violet-400"
+                        <Card
+                            className="flex flex-col gap-1 rounded-2xl border p-5 transition-colors border-zinc-800 bg-neutral-900"
                             href={platform.url}
                             target="_blank"
                             rel="noreferrer"
+                            color={platformImageMap[platform.name]?.color}
                         >
                             <div
                                 class="flex flex-row justify-start items-start gap-3"
                             >
                                 <img
-                                    src={platformImageMap[platform.name]}
+                                    src={platformImageMap[platform.name].image}
                                     alt="Twitch"
                                     width="48"
                                 />
@@ -137,15 +159,16 @@
                                     </div>
                                 </div>
                             </div>
-                        </a>
+                        </Card>
                     {/each}
                 </div>
             </div>
         </div>
+        <!-- 2nd column -->
         <div class="">
-            <div class="border-cyan border-2 rounded-lg py-2 px-2">
+            <div class="border-cyan-300 border-2 rounded-lg translate-y-2">
                 <div
-                    class="-translate-x-20 px-5 py-5 text-4xl bg-cyan-300 text-black rounded-xl"
+                    class="-translate-x-20 px-5 py-5 text-4xl bg-cyan-300 text-black rounded-xl -translate-y-2"
                 >
                     Hi there, I'm <br />
                     <b>RythonDev</b>
