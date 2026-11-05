@@ -62,8 +62,9 @@
 
     @media (max-width: 700px) {
         .card {
-            width: calc(100% - 2rem);
-            margin: 0rem 1rem;
+            width: 100%;
+            min-width: 0;
+            margin: 0;
             padding: 0.75rem;
             border-radius: 1rem;
         }

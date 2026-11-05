@@ -78,20 +78,32 @@
 		<div class="py-8 text-gray-500 dark:text-gray-400">Loading…</div>
 	</main>
 {:else}
-	<main class="grid grid-cols-2 max-w-6xl mx-auto pt-20 pb-10 gap-10">
-		<div class="">
-			<div class="px-5">
-				<div class="flex justify-end items-start">
+	<main
+		class="mx-auto grid w-full max-w-6xl grid-cols-1 gap-10 px-4 pt-8 pb-10 sm:px-6 lg:grid-cols-2 lg:px-0 lg:pt-20"
+	>
+		{#if content.profile_image_url}
+			<div class="flex justify-center lg:hidden">
+				<img
+					class="h-auto w-full max-w-75 rounded-xl object-cover shadow-lg shadow-cyan-300"
+					src={content.profile_image_url}
+					alt={content.brand_name ?? "Profile image"}
+					width="300"
+				/>
+			</div>
+		{/if}
+		<div class="order-2 lg:order-1">
+			<div class="lg:px-5">
+				<div class="hidden items-start justify-end lg:flex">
 					{#if content.profile_image_url}
 						<img
-							class="shrink-0 rounded-xl object-cover shadow-cyan-300 shadow-lg"
+							class="h-auto w-full max-w-75 shrink-0 rounded-xl object-cover shadow-lg shadow-cyan-300"
 							src={content.profile_image_url}
 							alt={content.brand_name ?? "Profile image"}
 							width="300"
 						/>
 					{/if}
 				</div>
-				<div class="mt-6 grid grid-cols-2 gap-4">
+				<div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<!-- Twitch -->
 					<Card
 						className="flex flex-col gap-1 rounded-2xl border p-5 transition-colors border-zinc-800 bg-neutral-900"
@@ -173,12 +185,12 @@
 			</div>
 		</div>
 		<!-- 2nd column -->
-		<div class="flex flex-col justify-start items-start gap-5">
+		<div class="order-1 flex min-w-0 flex-col items-start justify-start gap-5 lg:order-2">
 			<div
-				class="border-cyan-300 border-2 rounded-lg translate-y-2 w-fit"
+				class="w-full translate-y-2 rounded-lg border-2 border-cyan-300 sm:w-fit"
 			>
 				<div
-					class="-translate-x-20 px-5 py-5 text-4xl bg-cyan-300 text-black rounded-xl -translate-y-2"
+					class="-translate-y-2 rounded-xl bg-cyan-300 px-5 py-5 text-3xl text-black sm:-translate-x-8 sm:text-4xl lg:-translate-x-20"
 				>
 					Hi there, I'm <br />
 					<b>RythonDev</b>
@@ -190,23 +202,23 @@
 				{/if}
 			</div>
 			<div class="mt-5">
-				<div class="text-white font-bold text-4xl mb-2">About Me</div>
-				<p>
+				<div class="mb-2 text-3xl font-bold text-white sm:text-4xl">About Me</div>
+				<p class="break-words">
 					{content.about ?? ""}
 				</p>
 			</div>
 			<div>
-				<div class="text-white font-bold text-4xl mb-2">
+				<div class="mb-2 text-3xl font-bold text-white sm:text-4xl">
 					Collaborations
 				</div>
 				<Collabs />
 			</div>
 			{#if services.length}
 				<section class="w-full">
-					<div class="mb-3 text-4xl font-bold text-white">
+					<div class="mb-3 text-3xl font-bold text-white sm:text-4xl">
 						Services
 					</div>
-					<div class="grid grid-cols-2 gap-x-8">
+					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-8">
 						<ul
 							class="list-disc space-y-2 pl-5 marker:text-cyan-300"
 						>
