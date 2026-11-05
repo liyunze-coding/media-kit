@@ -70,7 +70,7 @@
         <div class="py-8 text-gray-500 dark:text-gray-400">Loading…</div>
     </main>
 {:else}
-    <main class="grid grid-cols-2 max-w-6xl mx-auto pt-20 pb-10">
+    <main class="grid grid-cols-2 max-w-6xl mx-auto pt-20 pb-10 gap-10">
         <div class="">
             <div class="px-5">
                 <div class="flex justify-end items-start">
@@ -165,13 +165,26 @@
             </div>
         </div>
         <!-- 2nd column -->
-        <div class="">
-            <div class="border-cyan-300 border-2 rounded-lg translate-y-2">
+        <div class="flex flex-col justify-start items-start gap-5">
+            <div
+                class="border-cyan-300 border-2 rounded-lg translate-y-2 w-fit"
+            >
                 <div
                     class="-translate-x-20 px-5 py-5 text-4xl bg-cyan-300 text-black rounded-xl -translate-y-2"
                 >
                     Hi there, I'm <br />
                     <b>RythonDev</b>
+                </div>
+            </div>
+            <div class="mt-5">
+                <div class="text-white font-bold text-4xl mb-2">About Me</div>
+                <p>
+                    {content.about ?? ""}
+                </p>
+            </div>
+            <div>
+                <div class="text-white font-bold text-4xl mb-2">
+                    Collaborations
                 </div>
             </div>
         </div>
