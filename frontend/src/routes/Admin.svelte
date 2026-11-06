@@ -444,18 +444,26 @@
 			</section>
 		</div>
 
-		{#if message}
+		{#if message || error}
 			<div
-				class="mt-6 rounded-[10px] bg-green-600/10 px-4 py-3 text-sm text-green-600 dark:text-green-400"
+				class="fixed right-6 bottom-6 z-50 flex max-w-sm flex-col gap-2"
+				role="status"
+				aria-live="polite"
 			>
-				{message}
-			</div>
-		{/if}
-		{#if error}
-			<div
-				class="mt-6 rounded-[10px] bg-red-600/10 px-4 py-3 text-sm text-red-600 dark:text-red-400"
-			>
-				{error}
+				{#if message}
+					<div
+						class="rounded-[10px] bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg"
+					>
+						{message}
+					</div>
+				{/if}
+				{#if error}
+					<div
+						class="rounded-[10px] bg-red-600 px-4 py-3 text-sm font-medium text-white shadow-lg"
+					>
+						{error}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	{/if}
