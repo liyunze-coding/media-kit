@@ -5,6 +5,13 @@ export interface Platform {
   followers: number;
 }
 
+export interface Collab {
+  id: number;
+  name: string;
+  image: string;
+  url: string;
+}
+
 export interface TwitchData {
   configured?: boolean;
   found?: boolean;
@@ -23,10 +30,12 @@ export interface TwitchData {
 export interface MediaKit {
   content: Record<string, string>;
   platforms: Platform[];
+  collabs: Collab[];
   twitch: TwitchData | null;
 }
 
 export interface AdminState {
   content: Record<string, string>;
   platforms: Platform[];
+  collabs: Collab[];
 }

@@ -4,11 +4,12 @@
 		clearStoredToken,
 		fetchAdminState,
 		getStoredToken,
+		updateCollabs,
 		updateContent,
 		updatePlatforms,
 		verifyAdmin,
 	} from "../lib/api";
-	import type { Platform } from "../lib/types";
+	import type { Collab, Platform } from "../lib/types";
 
 	let authed = $state(false);
 	let loading = $state(true);
@@ -19,6 +20,8 @@
 
 	let content = $state<Record<string, string>>({});
 	let platforms = $state<Platform[]>([]);
+	let collabs = $state<Collab[]>([]);
+	let nextCollabId = -1;
 
 	onMount(async () => {
 		if (getStoredToken()) {
@@ -42,6 +45,7 @@
 			const state = await fetchAdminState();
 			content = state.content;
 			platforms = state.platforms;
+			collabs = state.collabs ?? [];
 			authed = true;
 		} catch (err) {
 			authed = false;
@@ -72,6 +76,7 @@
 		authed = false;
 		content = {};
 		platforms = [];
+		collabs = [];
 		message = "";
 		error = "";
 	}
@@ -85,6 +90,39 @@
 		} catch (err) {
 			error =
 				err instanceof Error ? err.message : "Unable to save content";
+		}
+	}
+
+	function addCollab() {
+		collabs = [
+			...collabs,
+			{ id: nextCollabId--, name: "", image: "", url: "" },
+		];
+	}
+
+	function removeCollab(index: number) {
+		collabs = collabs.filter((_, i) => i !== index);
+	}
+
+	function moveCollab(index: number, direction: -1 | 1) {
+		const target = index + direction;
+		if (target < 0 || target >= collabs.length) return;
+		const next = [...collabs];
+		[next[index], next[target]] = [next[target], next[index]];
+		collabs = next;
+	}
+
+	async function handleSaveCollabs() {
+		error = "";
+		message = "";
+		try {
+			collabs = await updateCollabs(collabs);
+			message = "Collaborations saved";
+		} catch (err) {
+			error =
+				err instanceof Error
+					? err.message
+					: "Unable to save collaborations";
 		}
 	}
 
@@ -295,6 +333,114 @@
 						</div>
 					{/each}
 				</div>
+			</section>
+
+			<section
+				class="border-t border-gray-200 pt-8 md:col-span-2 dark:border-zinc-800"
+			>
+				<div class="mb-5 flex items-center justify-between gap-4">
+					<h2 class="text-xl font-semibold tracking-tight">
+						Collaborations
+					</h2>
+					<div class="flex items-center gap-3">
+						<button
+							class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-85 dark:border-zinc-800 dark:text-neutral-50"
+							onclick={addCollab}
+						>
+							Add
+						</button>
+						<button
+							class="cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950"
+							onclick={handleSaveCollabs}
+						>
+							Save collaborations
+						</button>
+					</div>
+				</div>
+
+				{#if collabs.length === 0}
+					<p class="text-sm text-gray-500 dark:text-gray-400">
+						No collaborations yet.
+					</p>
+				{:else}
+					<div class="grid grid-cols-1 gap-5">
+						{#each collabs as collab, index (collab.id)}
+							<div
+								class="rounded-2xl border border-gray-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900"
+							>
+								<div
+									class="mb-4 flex items-center justify-between gap-3"
+								>
+									<div class="text-sm font-semibold">
+										{collab.name || "New collaboration"}
+									</div>
+									<div class="flex items-center gap-2">
+										<button
+											class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-neutral-50"
+											disabled={index === 0}
+											onclick={() => moveCollab(index, -1)}
+										>
+											Up
+										</button>
+										<button
+											class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-neutral-50"
+											disabled={index === collabs.length - 1}
+											onclick={() => moveCollab(index, 1)}
+										>
+											Down
+										</button>
+										<button
+											class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-red-600 dark:border-zinc-800 dark:text-red-400"
+											onclick={() => removeCollab(index)}
+										>
+											Remove
+										</button>
+									</div>
+								</div>
+								<div
+									class="grid grid-cols-1 gap-4 md:grid-cols-3"
+								>
+									<label
+										class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
+									>
+										<span>Name</span>
+										<input
+											class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+											bind:value={collab.name}
+										/>
+									</label>
+									<label
+										class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
+									>
+										<span>Image URL</span>
+										<div class="flex items-center gap-3">
+											<input
+												class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+												bind:value={collab.image}
+											/>
+											{#if collab.image}
+												<img
+													class="h-10 w-10 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-zinc-800"
+													src={collab.image}
+													alt=""
+												/>
+											{/if}
+										</div>
+									</label>
+									<label
+										class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
+									>
+										<span>URL</span>
+										<input
+											class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+											bind:value={collab.url}
+										/>
+									</label>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</section>
 		</div>
 

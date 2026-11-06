@@ -18,6 +18,7 @@
 
 	let content = $derived(data?.content ?? {});
 	let platforms = $derived(data?.platforms ?? []);
+	let collabs = $derived(data?.collabs ?? []);
 	let services = $derived(
 		(content.services ?? "")
 			.split("\n")
@@ -185,7 +186,9 @@
 			</div>
 		</div>
 		<!-- 2nd column -->
-		<div class="order-1 flex min-w-0 flex-col items-start justify-start gap-5 lg:order-2">
+		<div
+			class="order-1 flex min-w-0 flex-col items-start justify-start gap-5 lg:order-2"
+		>
 			<div
 				class="w-full translate-y-2 rounded-lg border-2 border-cyan-300 sm:w-fit"
 			>
@@ -202,23 +205,29 @@
 				{/if}
 			</div>
 			<div class="mt-5">
-				<div class="mb-2 text-3xl font-bold text-white sm:text-4xl">About Me</div>
-				<p class="break-words">
+				<div class="mb-2 text-3xl font-bold text-white sm:text-4xl">
+					About Me
+				</div>
+				<p class="wrap-break-word">
 					{content.about ?? ""}
 				</p>
 			</div>
-			<div>
-				<div class="mb-2 text-3xl font-bold text-white sm:text-4xl">
-					Collaborations
+			{#if collabs.length}
+				<div>
+					<div class="mb-2 text-3xl font-bold text-white sm:text-4xl">
+						Collaborations
+					</div>
+					<Collabs items={collabs} />
 				</div>
-				<Collabs />
-			</div>
+			{/if}
 			{#if services.length}
 				<section class="w-full">
 					<div class="mb-3 text-3xl font-bold text-white sm:text-4xl">
 						Services
 					</div>
-					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-8">
+					<div
+						class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-8"
+					>
 						<ul
 							class="list-disc space-y-2 pl-5 marker:text-cyan-300"
 						>

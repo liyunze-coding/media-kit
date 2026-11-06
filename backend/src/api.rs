@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 
 use crate::auth::is_authorized;
-use crate::db::{self, PlatformInput};
+use crate::db::{self, CollabInput, PlatformInput};
 use crate::state::AppState;
 use crate::twitch;
 
@@ -28,6 +28,10 @@ fn unauthorized() -> ApiError {
         StatusCode::UNAUTHORIZED,
         Json(json!({ "error": "unauthorized" })),
     )
+}
+
+fn bad_request(message: &str) -> ApiError {
+    (StatusCode::BAD_REQUEST, Json(json!({ "error": message })))
 }
 
 fn require_admin(state: &AppState, headers: &HeaderMap) -> Result<(), ApiError> {
@@ -53,6 +57,11 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
         db::get_platforms(&conn).map_err(internal_error)?
     };
 
+    let collabs = {
+        let conn = state.db.lock().unwrap();
+        db::get_collabs(&conn).map_err(internal_error)?
+    };
+
     let twitch = match twitch::get_twitch(&state).await {
         Ok(value) => value,
         Err(message) => json!({
@@ -66,6 +75,7 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
     let payload = json!({
         "content": content,
         "platforms": platforms,
+        "collabs": collabs,
         "twitch": twitch,
     });
 
@@ -93,10 +103,12 @@ pub async fn admin_get_state(
     let conn = state.db.lock().unwrap();
     let content = db::get_content(&conn).map_err(internal_error)?;
     let platforms = db::get_platforms(&conn).map_err(internal_error)?;
+    let collabs = db::get_collabs(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({
         "content": content,
         "platforms": platforms,
+        "collabs": collabs,
     })))
 }
 
@@ -140,5 +152,41 @@ pub async fn admin_update_platforms(
     let saved = db::get_platforms(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({ "platforms": saved })))
+}
+
+pub async fn admin_update_collabs(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(collabs): Json<Vec<CollabInput>>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&state, &headers)?;
+
+    let mut cleaned = Vec::with_capacity(collabs.len());
+    for collab in collabs {
+        let name = collab.name.trim().to_string();
+        let image = collab.image.trim().to_string();
+        let url = collab.url.trim().to_string();
+
+        if name.is_empty() && image.is_empty() && url.is_empty() {
+            continue;
+        }
+        if name.is_empty() {
+            return Err(bad_request("Each collaboration needs a name"));
+        }
+
+        cleaned.push(CollabInput { name, image, url });
+    }
+
+    {
+        let mut conn = state.db.lock().unwrap();
+        db::replace_collabs(&mut conn, &cleaned).map_err(internal_error)?;
+    }
+
+    state.cache.invalidate(MEDIA_KIT_CACHE_KEY);
+
+    let conn = state.db.lock().unwrap();
+    let saved = db::get_collabs(&conn).map_err(internal_error)?;
+
+    Ok(Json(json!({ "collabs": saved })))
 }
 

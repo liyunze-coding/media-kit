@@ -1,4 +1,4 @@
-import type { AdminState, MediaKit, Platform } from "./types";
+import type { AdminState, Collab, MediaKit, Platform } from "./types";
 
 const TOKEN_KEY = "rythondev_admin_token";
 
@@ -82,5 +82,29 @@ export async function updatePlatforms(
 
   const data = await res.json();
   return data.platforms;
+}
+
+async function readError(res: Response, fallback: string): Promise<string> {
+  const data = await res.json().catch(() => null);
+  return typeof data?.error === "string" ? data.error : fallback;
+}
+
+export async function updateCollabs(collabs: Collab[]): Promise<Collab[]> {
+  const res = await fetch("/api/admin/collabs", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(
+      collabs.map(({ name, image, url }) => ({ name, image, url })),
+    ),
+  });
+
+  if (res.status === 401) {
+    clearStoredToken();
+    throw new Error("unauthorized");
+  }
+  if (!res.ok) throw new Error(await readError(res, "Failed to save collaborations"));
+
+  const data = await res.json();
+  return data.collabs;
 }
 
