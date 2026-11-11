@@ -62,23 +62,14 @@
 		profile_image_url: "Profile image",
 		about: "About",
 		services: "Services",
-		demographics_age: "Age",
-		demographics_gender: "Gender",
-		demographics_location: "Location",
 	};
 	const primaryContentKeys = ["brand_name", "tagline", "email"] as const;
 	const longContentKeys = ["about", "services"] as const;
-	const demographicKeys = [
-		"demographics_age",
-		"demographics_gender",
-		"demographics_location",
-	] as const;
 	const reservedContentKeys = new Set<string>([
 		"twitch_avg_reach",
 		"profile_image_url",
 		...primaryContentKeys,
 		...longContentKeys,
-		...demographicKeys,
 	]);
 	const platformRank: Record<string, number> = {
 		instagram: 0,
@@ -93,9 +84,6 @@
 			if (left !== right) return left - right;
 			return a.name.localeCompare(b.name);
 		}),
-	);
-	let demographicFields = $derived(
-		demographicKeys.filter((key) => key in content),
 	);
 	let extraContentKeys = $derived(
 		Object.keys(content)
@@ -334,10 +322,16 @@
 	{:else}
 		<div class="mt-10 flex flex-col gap-10">
 			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
-				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+				<div
+					class="mb-5 flex flex-wrap items-end justify-between gap-3"
+				>
 					<div>
-						<h2 class="text-xl font-semibold tracking-tight">Profile</h2>
-						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+						<h2 class="text-xl font-semibold tracking-tight">
+							Profile
+						</h2>
+						<p
+							class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+						>
 							Name, bio, and services shown on the media kit.
 						</p>
 					</div>
@@ -351,7 +345,10 @@
 						{#if key in content}
 							<label class={labelClass}>
 								<span>{titleCase(key)}</span>
-								<input class={controlClass} bind:value={content[key]} />
+								<input
+									class={controlClass}
+									bind:value={content[key]}
+								/>
 							</label>
 						{/if}
 					{/each}
@@ -391,30 +388,21 @@
 								<textarea
 									class="{controlClass} resize-y"
 									rows={key === "services" ? 6 : 5}
-									bind:value={content[key]}
-								></textarea>
+									bind:value={content[key]}></textarea>
 							</label>
 						{/if}
 					{/each}
 				</div>
-
-				{#if demographicFields.length}
-					<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-						{#each demographicFields as key}
-							<label class={labelClass}>
-								<span>{titleCase(key)}</span>
-								<input class={controlClass} bind:value={content[key]} />
-							</label>
-						{/each}
-					</div>
-				{/if}
 
 				{#if extraContentKeys.length}
 					<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
 						{#each extraContentKeys as key}
 							<label class={labelClass}>
 								<span>{titleCase(key)}</span>
-								<input class={controlClass} bind:value={content[key]} />
+								<input
+									class={controlClass}
+									bind:value={content[key]}
+								/>
 							</label>
 						{/each}
 					</div>
@@ -422,12 +410,16 @@
 			</section>
 
 			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
-				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+				<div
+					class="mb-5 flex flex-wrap items-end justify-between gap-3"
+				>
 					<div>
 						<h2 class="text-xl font-semibold tracking-tight">
 							Platforms
 						</h2>
-						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+						<p
+							class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+						>
 							Average reach is the previous 30 days. Twitch
 							followers update from Twitch.
 						</p>
@@ -444,29 +436,39 @@
 					<span>Handle</span>
 					<span>URL</span>
 					<span>Followers</span>
-					<span title="Average reach (previous 30 days)">Avg reach</span>
+					<span title="Average reach (previous 30 days)"
+						>Avg reach</span
+					>
 				</div>
 
 				<div class="flex flex-col gap-3">
 					<div class="{cardClass} {platformRowClass}">
-						<div class="text-sm font-semibold sm:col-span-2 lg:col-span-1">
+						<div
+							class="text-sm font-semibold sm:col-span-2 lg:col-span-1"
+						>
 							Twitch
 						</div>
 						<div class="{labelClass} min-w-0">
 							<span class="lg:sr-only">Handle</span>
-							<div class="{controlClass} flex items-center text-gray-400">
+							<div
+								class="{controlClass} flex items-center text-gray-400"
+							>
 								From Twitch
 							</div>
 						</div>
 						<div class="{labelClass} min-w-0">
 							<span class="lg:sr-only">URL</span>
-							<div class="{controlClass} flex items-center text-gray-400">
+							<div
+								class="{controlClass} flex items-center text-gray-400"
+							>
 								From Twitch
 							</div>
 						</div>
 						<div class="{labelClass} min-w-0">
 							<span class="lg:sr-only">Followers</span>
-							<div class="{controlClass} flex items-center text-gray-400">
+							<div
+								class="{controlClass} flex items-center text-gray-400"
+							>
 								Live
 							</div>
 						</div>
@@ -521,7 +523,9 @@
 								/>
 							</label>
 							<label class="{labelClass} min-w-0">
-								<span class="lg:sr-only">Avg reach (30 days)</span>
+								<span class="lg:sr-only"
+									>Avg reach (30 days)</span
+								>
 								<input
 									class={controlClass}
 									type="number"
@@ -536,12 +540,16 @@
 			</section>
 
 			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
-				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+				<div
+					class="mb-5 flex flex-wrap items-end justify-between gap-3"
+				>
 					<div>
 						<h2 class="text-xl font-semibold tracking-tight">
 							Collaborations
 						</h2>
-						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+						<p
+							class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+						>
 							Order here is the order on the media kit.
 						</p>
 					</div>
@@ -549,7 +557,10 @@
 						<button class={secondaryClass} onclick={addCollab}>
 							Add
 						</button>
-						<button class={primaryClass} onclick={handleSaveCollabs}>
+						<button
+							class={primaryClass}
+							onclick={handleSaveCollabs}
+						>
 							Save
 						</button>
 					</div>
@@ -598,7 +609,10 @@
 								</label>
 								<label class="{labelClass} min-w-0">
 									<span class="md:sr-only">URL</span>
-									<input class={controlClass} bind:value={collab.url} />
+									<input
+										class={controlClass}
+										bind:value={collab.url}
+									/>
 								</label>
 								<div class="flex items-center gap-2">
 									<button
@@ -629,7 +643,9 @@
 			</section>
 
 			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
-				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+				<div
+					class="mb-5 flex flex-wrap items-end justify-between gap-3"
+				>
 					<div>
 						<h2 class="text-xl font-semibold tracking-tight">
 							Locations
@@ -639,15 +655,19 @@
 								? 'text-red-600 dark:text-red-400'
 								: 'text-gray-500 dark:text-gray-400'}"
 						>
-							Twitch views by country · {Math.round(locationTotal * 10) /
-								10}%
+							Twitch views by country · {Math.round(
+								locationTotal * 10,
+							) / 10}%
 						</p>
 					</div>
 					<div class="flex items-center gap-2">
 						<button class={secondaryClass} onclick={addLocation}>
 							Add
 						</button>
-						<button class={primaryClass} onclick={handleSaveLocations}>
+						<button
+							class={primaryClass}
+							onclick={handleSaveLocations}
+						>
 							Save
 						</button>
 					</div>

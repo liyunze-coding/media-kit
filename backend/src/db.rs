@@ -9,6 +9,8 @@ pub struct PlatformInput {
     pub handle: String,
     pub url: String,
     pub followers: i64,
+    #[serde(default)]
+    pub avg_reach: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,6 +40,7 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
             handle TEXT NOT NULL DEFAULT '',
             url TEXT NOT NULL DEFAULT '',
             followers INTEGER NOT NULL DEFAULT 0,
+            avg_reach INTEGER NOT NULL DEFAULT 0,
             updated_at INTEGER NOT NULL
         );
 
@@ -60,7 +63,41 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
 
         "#,
     )?;
+    migrate(conn)?;
     seed(conn)
+}
+
+fn migrate(conn: &Connection) -> rusqlite::Result<()> {
+    if column_exists(conn, "platforms", "avg_reach")? {
+        return Ok(());
+    }
+
+    conn.execute(
+        "ALTER TABLE platforms ADD COLUMN avg_reach INTEGER NOT NULL DEFAULT 0",
+        [],
+    )?;
+
+    // Applied once, when the column is added to an existing database.
+    let defaults = [("instagram", 1_000_i64), ("youtube", 10_000), ("tiktok", 5_000)];
+    for (name, avg_reach) in defaults {
+        conn.execute(
+            "UPDATE platforms SET avg_reach = ?1 WHERE name = ?2",
+            params![avg_reach, name],
+        )?;
+    }
+
+    Ok(())
+}
+
+fn column_exists(conn: &Connection, table: &str, column: &str) -> rusqlite::Result<bool> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let names = stmt.query_map([], |row| row.get::<_, String>(1))?;
+    for name in names {
+        if name? == column {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn seed(conn: &Connection) -> rusqlite::Result<()> {
@@ -75,6 +112,7 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
             "services",
             "Sponsored content\nProduct reviews\nLivestream integrations\nSocial media campaigns\nBrand partnerships\nEvent appearances",
         ),
+        ("twitch_avg_reach", "35"),
     ];
 
     for (key, value) in content_defaults {
@@ -85,20 +123,33 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
     }
 
     let platform_defaults = [
-        ("youtube", "@rythondev", "https://youtube.com/@rythondev", 0),
-        ("tiktok", "@rythondev", "https://tiktok.com/@rythondev", 0),
+        (
+            "youtube",
+            "@rythondev",
+            "https://youtube.com/@rythondev",
+            0,
+            10_000,
+        ),
+        (
+            "tiktok",
+            "@rythondev",
+            "https://tiktok.com/@rythondev",
+            0,
+            5_000,
+        ),
         (
             "instagram",
             "@rythondev",
             "https://instagram.com/rythondev",
             0,
+            1_000,
         ),
     ];
 
-    for (name, handle, url, followers) in platform_defaults {
+    for (name, handle, url, followers, avg_reach) in platform_defaults {
         conn.execute(
-            "INSERT OR IGNORE INTO platforms (name, handle, url, followers, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![name, handle, url, followers, now],
+            "INSERT OR IGNORE INTO platforms (name, handle, url, followers, avg_reach, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![name, handle, url, followers, avg_reach, now],
         )?;
     }
 
@@ -150,8 +201,9 @@ pub fn get_content(conn: &Connection) -> rusqlite::Result<Value> {
 }
 
 pub fn get_platforms(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
-    let mut stmt =
-        conn.prepare("SELECT name, handle, url, followers FROM platforms ORDER BY name")?;
+    let mut stmt = conn.prepare(
+        "SELECT name, handle, url, followers, avg_reach FROM platforms ORDER BY name",
+    )?;
 
     let rows = stmt.query_map([], |row| {
         Ok(json!({
@@ -159,6 +211,7 @@ pub fn get_platforms(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
             "handle": row.get::<_, String>(1)?,
             "url": row.get::<_, String>(2)?,
             "followers": row.get::<_, i64>(3)?,
+            "avg_reach": row.get::<_, i64>(4)?,
         }))
     })?;
 
@@ -266,11 +319,12 @@ pub fn replace_twitch_locations(
 pub fn upsert_platforms(conn: &Connection, platforms: &[PlatformInput]) -> rusqlite::Result<()> {
     let now = now_secs();
     let mut stmt = conn.prepare(
-        "INSERT INTO platforms (name, handle, url, followers, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+        "INSERT INTO platforms (name, handle, url, followers, avg_reach, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT(name) DO UPDATE SET
              handle = excluded.handle,
              url = excluded.url,
              followers = excluded.followers,
+             avg_reach = excluded.avg_reach,
              updated_at = excluded.updated_at",
     )?;
 
@@ -280,6 +334,7 @@ pub fn upsert_platforms(conn: &Connection, platforms: &[PlatformInput]) -> rusql
             platform.handle,
             platform.url,
             platform.followers,
+            platform.avg_reach,
             now
         ])?;
     }
