@@ -73,6 +73,10 @@ async fn main() {
         .route("/api/admin/content", put(api::admin_update_content))
         .route("/api/admin/platforms", put(api::admin_update_platforms))
         .route("/api/admin/collabs", put(api::admin_update_collabs))
+        .route(
+            "/api/admin/twitch-locations",
+            put(api::admin_update_twitch_locations),
+        )
         .fallback_service(ServeDir::new(&static_dir).append_index_html_on_directories(true))
         .with_state(app_state);
 

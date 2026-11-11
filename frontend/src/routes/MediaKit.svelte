@@ -8,6 +8,7 @@
 	import Platforms from "../components/media-kit/Platforms.svelte";
 	import ProfileImage from "../components/media-kit/ProfileImage.svelte";
 	import Services from "../components/media-kit/Services.svelte";
+	import TwitchLocations from "../components/media-kit/TwitchLocations.svelte";
 
 	let data = $state<MediaKit | null>(null);
 	let error = $state("");
@@ -24,6 +25,7 @@
 	let platforms = $derived(data?.platforms ?? []);
 	let collabs = $derived(data?.collabs ?? []);
 	let twitch = $derived(data?.twitch);
+	let twitchLocations = $derived(data?.twitch_locations ?? []);
 </script>
 
 {#if error}
@@ -77,6 +79,7 @@
 				</div>
 			{/if}
 			<Services services={content.services ?? ""} />
+			<TwitchLocations locations={twitchLocations} />
 		</div>
 	</main>
 {/if}

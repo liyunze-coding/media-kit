@@ -7,9 +7,10 @@
 		updateCollabs,
 		updateContent,
 		updatePlatforms,
+		updateTwitchLocations,
 		verifyAdmin,
 	} from "../lib/api";
-	import type { Collab, Platform } from "../lib/types";
+	import type { Collab, Platform, TwitchLocation } from "../lib/types";
 
 	let authed = $state(false);
 	let loading = $state(true);
@@ -22,6 +23,14 @@
 	let platforms = $state<Platform[]>([]);
 	let collabs = $state<Collab[]>([]);
 	let nextCollabId = -1;
+	let twitchLocations = $state<TwitchLocation[]>([]);
+	let nextLocationId = -1;
+	let locationTotal = $derived(
+		twitchLocations.reduce(
+			(sum, location) => sum + (Number(location.percent) || 0),
+			0,
+		),
+	);
 
 	onMount(async () => {
 		if (getStoredToken()) {
@@ -46,6 +55,7 @@
 			content = state.content;
 			platforms = state.platforms;
 			collabs = state.collabs ?? [];
+			twitchLocations = state.twitch_locations ?? [];
 			authed = true;
 		} catch (err) {
 			authed = false;
@@ -77,6 +87,7 @@
 		content = {};
 		platforms = [];
 		collabs = [];
+		twitchLocations = [];
 		message = "";
 		error = "";
 	}
@@ -123,6 +134,31 @@
 				err instanceof Error
 					? err.message
 					: "Unable to save collaborations";
+		}
+	}
+
+	function addLocation() {
+		twitchLocations = [
+			...twitchLocations,
+			{ id: nextLocationId--, country: "", percent: 0 },
+		];
+	}
+
+	function removeLocation(index: number) {
+		twitchLocations = twitchLocations.filter((_, i) => i !== index);
+	}
+
+	async function handleSaveLocations() {
+		error = "";
+		message = "";
+		try {
+			twitchLocations = await updateTwitchLocations(twitchLocations);
+			message = "Twitch locations saved";
+		} catch (err) {
+			error =
+				err instanceof Error
+					? err.message
+					: "Unable to save Twitch locations";
 		}
 	}
 
@@ -437,6 +473,83 @@
 										/>
 									</label>
 								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</section>
+
+			<section
+				class="border-t border-gray-200 pt-8 md:col-span-2 dark:border-zinc-800"
+			>
+				<div class="mb-5 flex items-center justify-between gap-4">
+					<div>
+						<h2 class="text-xl font-semibold tracking-tight">
+							Twitch views by location
+						</h2>
+						<p
+							class="mt-1 text-sm {locationTotal > 100
+								? 'text-red-600 dark:text-red-400'
+								: 'text-gray-500 dark:text-gray-400'}"
+						>
+							Total: {Math.round(locationTotal * 10) / 10}%
+						</p>
+					</div>
+					<div class="flex items-center gap-3">
+						<button
+							class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-85 dark:border-zinc-800 dark:text-neutral-50"
+							onclick={addLocation}
+						>
+							Add
+						</button>
+						<button
+							class="cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950"
+							onclick={handleSaveLocations}
+						>
+							Save locations
+						</button>
+					</div>
+				</div>
+
+				{#if twitchLocations.length === 0}
+					<p class="text-sm text-gray-500 dark:text-gray-400">
+						No locations yet.
+					</p>
+				{:else}
+					<div class="grid grid-cols-1 gap-3">
+						{#each twitchLocations as location, index (location.id)}
+							<div
+								class="flex items-end gap-3 rounded-2xl border border-gray-200 bg-neutral-50 p-4 dark:border-zinc-800 dark:bg-neutral-900"
+							>
+								<label
+									class="flex flex-1 flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
+								>
+									<span>Country</span>
+									<input
+										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+										placeholder="United States"
+										bind:value={location.country}
+									/>
+								</label>
+								<label
+									class="flex w-28 flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
+								>
+									<span>Percent</span>
+									<input
+										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+										type="number"
+										min="0"
+										max="100"
+										step="0.1"
+										bind:value={location.percent}
+									/>
+								</label>
+								<button
+									class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-2.5 text-sm text-red-600 dark:border-zinc-800 dark:text-red-400"
+									onclick={() => removeLocation(index)}
+								>
+									Remove
+								</button>
 							</div>
 						{/each}
 					</div>

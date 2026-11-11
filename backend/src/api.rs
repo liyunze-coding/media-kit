@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 
 use crate::auth::is_authorized;
-use crate::db::{self, CollabInput, PlatformInput};
+use crate::db::{self, CollabInput, PlatformInput, TwitchLocationInput};
 use crate::state::AppState;
 use crate::twitch;
 
@@ -62,6 +62,11 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
         db::get_collabs(&conn).map_err(internal_error)?
     };
 
+    let twitch_locations = {
+        let conn = state.db.lock().unwrap();
+        db::get_twitch_locations(&conn).map_err(internal_error)?
+    };
+
     let twitch = match twitch::get_twitch(&state).await {
         Ok(value) => value,
         Err(message) => json!({
@@ -77,6 +82,7 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
         "platforms": platforms,
         "collabs": collabs,
         "twitch": twitch,
+        "twitch_locations": twitch_locations,
     });
 
     state
@@ -104,11 +110,13 @@ pub async fn admin_get_state(
     let content = db::get_content(&conn).map_err(internal_error)?;
     let platforms = db::get_platforms(&conn).map_err(internal_error)?;
     let collabs = db::get_collabs(&conn).map_err(internal_error)?;
+    let twitch_locations = db::get_twitch_locations(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({
         "content": content,
         "platforms": platforms,
         "collabs": collabs,
+        "twitch_locations": twitch_locations,
     })))
 }
 
@@ -188,5 +196,50 @@ pub async fn admin_update_collabs(
     let saved = db::get_collabs(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({ "collabs": saved })))
+}
+
+pub async fn admin_update_twitch_locations(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(locations): Json<Vec<TwitchLocationInput>>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&state, &headers)?;
+
+    let mut cleaned = Vec::with_capacity(locations.len());
+    for location in locations {
+        let country = location.country.trim().to_string();
+
+        if country.is_empty() && location.percent == 0.0 {
+            continue;
+        }
+        if country.is_empty() {
+            return Err(bad_request("Each location needs a country"));
+        }
+        if !location.percent.is_finite() || !(0.0..=100.0).contains(&location.percent) {
+            return Err(bad_request("Percentages must be between 0 and 100"));
+        }
+
+        cleaned.push(TwitchLocationInput {
+            country,
+            percent: location.percent,
+        });
+    }
+
+    let total: f64 = cleaned.iter().map(|location| location.percent).sum();
+    if total > 100.0 + 1e-6 {
+        return Err(bad_request("Percentages add up to more than 100"));
+    }
+
+    {
+        let mut conn = state.db.lock().unwrap();
+        db::replace_twitch_locations(&mut conn, &cleaned).map_err(internal_error)?;
+    }
+
+    state.cache.invalidate(MEDIA_KIT_CACHE_KEY);
+
+    let conn = state.db.lock().unwrap();
+    let saved = db::get_twitch_locations(&conn).map_err(internal_error)?;
+
+    Ok(Json(json!({ "twitch_locations": saved })))
 }
 

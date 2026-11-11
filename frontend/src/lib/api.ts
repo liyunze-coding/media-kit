@@ -1,4 +1,10 @@
-import type { AdminState, Collab, MediaKit, Platform } from "./types";
+import type {
+  AdminState,
+  Collab,
+  MediaKit,
+  Platform,
+  TwitchLocation,
+} from "./types";
 
 const TOKEN_KEY = "rythondev_admin_token";
 
@@ -106,5 +112,30 @@ export async function updateCollabs(collabs: Collab[]): Promise<Collab[]> {
 
   const data = await res.json();
   return data.collabs;
+}
+
+export async function updateTwitchLocations(
+  locations: TwitchLocation[],
+): Promise<TwitchLocation[]> {
+  const res = await fetch("/api/admin/twitch-locations", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(
+      locations.map(({ country, percent }) => ({
+        country,
+        percent: Number(percent) || 0,
+      })),
+    ),
+  });
+
+  if (res.status === 401) {
+    clearStoredToken();
+    throw new Error("unauthorized");
+  }
+  if (!res.ok)
+    throw new Error(await readError(res, "Failed to save Twitch locations"));
+
+  const data = await res.json();
+  return data.twitch_locations;
 }
 

@@ -18,6 +18,12 @@ pub struct CollabInput {
     pub url: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct TwitchLocationInput {
+    pub country: String,
+    pub percent: f64,
+}
+
 pub fn init(conn: &Connection) -> rusqlite::Result<()> {
     conn.execute_batch(
         r#"
@@ -40,6 +46,14 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
             name TEXT NOT NULL,
             image TEXT NOT NULL DEFAULT '',
             url TEXT NOT NULL DEFAULT '',
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS twitch_locations (
+            id INTEGER PRIMARY KEY,
+            country TEXT NOT NULL,
+            percent REAL NOT NULL DEFAULT 0,
             sort_order INTEGER NOT NULL DEFAULT 0,
             updated_at INTEGER NOT NULL
         );
@@ -196,6 +210,49 @@ pub fn replace_collabs(conn: &mut Connection, collabs: &[CollabInput]) -> rusqli
                 collab.name,
                 collab.image,
                 collab.url,
+                index as i64,
+                now
+            ])?;
+        }
+    }
+
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn get_twitch_locations(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, country, percent FROM twitch_locations ORDER BY sort_order, id",
+    )?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok(json!({
+            "id": row.get::<_, i64>(0)?,
+            "country": row.get::<_, String>(1)?,
+            "percent": row.get::<_, f64>(2)?,
+        }))
+    })?;
+
+    rows.collect()
+}
+
+pub fn replace_twitch_locations(
+    conn: &mut Connection,
+    locations: &[TwitchLocationInput],
+) -> rusqlite::Result<()> {
+    let tx = conn.transaction()?;
+    tx.execute("DELETE FROM twitch_locations", [])?;
+
+    let now = now_secs();
+    {
+        let mut stmt = tx.prepare(
+            "INSERT INTO twitch_locations (country, percent, sort_order, updated_at) VALUES (?1, ?2, ?3, ?4)",
+        )?;
+
+        for (index, location) in locations.iter().enumerate() {
+            stmt.execute(params![
+                location.country,
+                location.percent,
                 index as i64,
                 now
             ])?;

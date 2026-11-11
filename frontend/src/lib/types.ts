@@ -12,6 +12,12 @@ export interface Collab {
   url: string;
 }
 
+export interface TwitchLocation {
+  id: number;
+  country: string;
+  percent: number;
+}
+
 export interface TwitchData {
   configured?: boolean;
   found?: boolean;
@@ -32,10 +38,12 @@ export interface MediaKit {
   platforms: Platform[];
   collabs: Collab[];
   twitch: TwitchData | null;
+  twitch_locations: TwitchLocation[];
 }
 
 export interface AdminState {
   content: Record<string, string>;
   platforms: Platform[];
   collabs: Collab[];
+  twitch_locations: TwitchLocation[];
 }
