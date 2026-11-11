@@ -40,11 +40,77 @@
 		}
 	});
 
+	const labelClass =
+		"flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400";
+	const controlClass =
+		"w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400";
+	const cardClass =
+		"rounded-2xl border border-gray-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900";
+	const primaryClass =
+		"cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950";
+	const secondaryClass =
+		"cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-85 dark:border-zinc-800 dark:text-neutral-50";
+	const dangerClass =
+		"cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-2.5 text-sm text-red-600 dark:border-zinc-800 dark:text-red-400";
+	const platformRowClass =
+		"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1.3fr)_7.5rem_9.5rem] lg:items-center lg:gap-3";
+
+	const contentLabels: Record<string, string> = {
+		brand_name: "Brand name",
+		tagline: "Tagline",
+		email: "Email",
+		profile_image_url: "Profile image",
+		about: "About",
+		services: "Services",
+		demographics_age: "Age",
+		demographics_gender: "Gender",
+		demographics_location: "Location",
+	};
+	const primaryContentKeys = ["brand_name", "tagline", "email"] as const;
+	const longContentKeys = ["about", "services"] as const;
+	const demographicKeys = [
+		"demographics_age",
+		"demographics_gender",
+		"demographics_location",
+	] as const;
+	const reservedContentKeys = new Set<string>([
+		"twitch_avg_reach",
+		"profile_image_url",
+		...primaryContentKeys,
+		...longContentKeys,
+		...demographicKeys,
+	]);
+	const platformRank: Record<string, number> = {
+		instagram: 0,
+		tiktok: 1,
+		youtube: 2,
+	};
+
+	let orderedPlatforms = $derived(
+		[...platforms].sort((a, b) => {
+			const left = platformRank[a.name.toLowerCase()] ?? 50;
+			const right = platformRank[b.name.toLowerCase()] ?? 50;
+			if (left !== right) return left - right;
+			return a.name.localeCompare(b.name);
+		}),
+	);
+	let demographicFields = $derived(
+		demographicKeys.filter((key) => key in content),
+	);
+	let extraContentKeys = $derived(
+		Object.keys(content)
+			.filter((key) => !reservedContentKeys.has(key))
+			.sort(),
+	);
+
 	function titleCase(key: string): string {
-		return key
-			.split("_")
-			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-			.join(" ");
+		return (
+			contentLabels[key] ??
+			key
+				.split("_")
+				.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+				.join(" ")
+		);
 	}
 
 	async function loadState() {
@@ -53,6 +119,9 @@
 		try {
 			const state = await fetchAdminState();
 			content = state.content;
+			if (content.twitch_avg_reach == null) {
+				content.twitch_avg_reach = "0";
+			}
 			platforms = state.platforms;
 			collabs = state.collabs ?? [];
 			twitchLocations = state.twitch_locations ?? [];
@@ -96,7 +165,13 @@
 		error = "";
 		message = "";
 		try {
-			content = await updateContent(content);
+			const payload = Object.fromEntries(
+				Object.entries(content).map(([key, value]) => [
+					key,
+					String(value ?? ""),
+				]),
+			);
+			content = await updateContent(payload);
 			message = "Content saved";
 		} catch (err) {
 			error =
@@ -169,8 +244,14 @@
 			const payload = platforms.map((platform) => ({
 				...platform,
 				followers: Number(platform.followers) || 0,
+				avg_reach: Number(platform.avg_reach) || 0,
 			}));
+			const twitchAvgReach = String(
+				Math.max(0, Math.round(Number(content.twitch_avg_reach) || 0)),
+			);
 			platforms = await updatePlatforms(payload);
+			await updateContent({ twitch_avg_reach: twitchAvgReach });
+			content.twitch_avg_reach = twitchAvgReach;
 			message = "Platforms saved";
 		} catch (err) {
 			error =
@@ -179,17 +260,15 @@
 	}
 </script>
 
-<main class="mx-auto w-full max-w-230 px-6 pt-12 pb-18">
-	<header class="flex items-start justify-between gap-6">
+<main class="mx-auto w-full max-w-6xl px-4 pt-10 pb-16 sm:px-6">
+	<header class="flex flex-wrap items-start justify-between gap-4">
 		<div>
 			<p
-				class="mb-3 text-xs font-semibold tracking-[0.14em] uppercase text-gray-500 dark:text-gray-400"
+				class="mb-2 text-xs font-semibold tracking-[0.14em] uppercase text-gray-500 dark:text-gray-400"
 			>
 				CMS
 			</p>
-			<h1
-				class="text-[clamp(36px,8vw,52px)] leading-[1.05] font-semibold tracking-tight"
-			>
+			<h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
 				RythonDev media kit
 			</h1>
 		</div>
@@ -201,10 +280,7 @@
 				View media kit
 			</a>
 			{#if authed}
-				<button
-					class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-85 dark:border-zinc-800 dark:text-neutral-50"
-					onclick={handleLogout}
-				>
+				<button class={secondaryClass} onclick={handleLogout}>
 					Log out
 				</button>
 			{/if}
@@ -214,30 +290,28 @@
 	{#if loading}
 		<div class="py-8 text-gray-500 dark:text-gray-400">Loading…</div>
 	{:else if !authed}
-		<form class="mt-10 max-w-100" onsubmit={handleLogin}>
-			<h2 class="mb-2 text-xl font-semibold tracking-tight">Sign in</h2>
-			<p class="text-gray-500 dark:text-gray-400">
-				Enter the admin credentials configured for this instance.
-			</p>
+		<form class="mt-10 flex max-w-sm flex-col gap-4" onsubmit={handleLogin}>
+			<div>
+				<h2 class="text-xl font-semibold tracking-tight">Sign in</h2>
+				<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+					Enter the admin credentials configured for this instance.
+				</p>
+			</div>
 
-			<label
-				class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-			>
+			<label class={labelClass}>
 				<span>Username</span>
 				<input
-					class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+					class={controlClass}
 					bind:value={username}
 					autocomplete="username"
 					required
 				/>
 			</label>
 
-			<label
-				class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-			>
+			<label class={labelClass}>
 				<span>Password</span>
 				<input
-					class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+					class={controlClass}
 					bind:value={password}
 					type="password"
 					autocomplete="current-password"
@@ -247,149 +321,236 @@
 
 			{#if error}
 				<div
-					class="mt-6 rounded-[10px] bg-red-600/10 px-4 py-3 text-sm text-red-600 dark:text-red-400"
+					class="rounded-[10px] bg-red-600/10 px-4 py-3 text-sm text-red-600 dark:text-red-400"
 				>
 					{error}
 				</div>
 			{/if}
 
-			<button
-				class="cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950"
-				type="submit"
-			>
+			<button class="{primaryClass} self-start" type="submit">
 				Sign in
 			</button>
 		</form>
 	{:else}
-		<div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 md:items-start">
+		<div class="mt-10 flex flex-col gap-10">
 			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
-				<div class="mb-5 flex items-center justify-between gap-4">
-					<h2 class="text-xl font-semibold tracking-tight">
-						Text content
-					</h2>
-					<button
-						class="cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950"
-						onclick={handleSaveContent}
-					>
-						Save content
+				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+					<div>
+						<h2 class="text-xl font-semibold tracking-tight">Profile</h2>
+						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							Name, bio, and services shown on the media kit.
+						</p>
+					</div>
+					<button class={primaryClass} onclick={handleSaveContent}>
+						Save
 					</button>
 				</div>
 
-				<div class="grid grid-cols-1 gap-4">
-					{#each Object.keys(content) as key}
-						<label
-							class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-						>
-							<span>{titleCase(key)}</span>
-							{#if key === "about" || key === "services"}
-								<textarea
-									class="w-full resize-y rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-									rows={key === "services" ? 6 : 4}
-									bind:value={content[key]}></textarea>
-							{:else if key === "profile_image_url"}
-								<div class="flex items-start gap-4">
-									<input
-										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-										bind:value={content[key]}
-									/>
-									{#if content[key]}
-										<img
-											class="h-16 w-16 shrink-0 rounded-full border border-gray-200 object-cover dark:border-zinc-800"
-											src={content[key]}
-											alt="Profile preview"
-										/>
-									{/if}
-								</div>
-							{:else}
-								<input
-									class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-									bind:value={content[key]}
-								/>
-							{/if}
-						</label>
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+					{#each primaryContentKeys as key}
+						{#if key in content}
+							<label class={labelClass}>
+								<span>{titleCase(key)}</span>
+								<input class={controlClass} bind:value={content[key]} />
+							</label>
+						{/if}
 					{/each}
 				</div>
+
+				{#if "profile_image_url" in content}
+					<label class="{labelClass} mt-4">
+						<span>Profile image</span>
+						<div class="flex items-center gap-3">
+							<input
+								class={controlClass}
+								bind:value={content.profile_image_url}
+							/>
+							{#if content.profile_image_url}
+								<img
+									class="h-12 w-12 shrink-0 rounded-full border border-gray-200 object-cover dark:border-zinc-800"
+									src={content.profile_image_url}
+									alt=""
+								/>
+							{/if}
+						</div>
+					</label>
+				{/if}
+
+				<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+					{#each longContentKeys as key}
+						{#if key in content}
+							<label class={labelClass}>
+								<span>
+									{titleCase(key)}
+									{#if key === "services"}
+										<span class="font-normal text-gray-400">
+											· one per line
+										</span>
+									{/if}
+								</span>
+								<textarea
+									class="{controlClass} resize-y"
+									rows={key === "services" ? 6 : 5}
+									bind:value={content[key]}
+								></textarea>
+							</label>
+						{/if}
+					{/each}
+				</div>
+
+				{#if demographicFields.length}
+					<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+						{#each demographicFields as key}
+							<label class={labelClass}>
+								<span>{titleCase(key)}</span>
+								<input class={controlClass} bind:value={content[key]} />
+							</label>
+						{/each}
+					</div>
+				{/if}
+
+				{#if extraContentKeys.length}
+					<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+						{#each extraContentKeys as key}
+							<label class={labelClass}>
+								<span>{titleCase(key)}</span>
+								<input class={controlClass} bind:value={content[key]} />
+							</label>
+						{/each}
+					</div>
+				{/if}
 			</section>
 
 			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
-				<div class="mb-5 flex items-center justify-between gap-4">
-					<h2 class="text-xl font-semibold tracking-tight">
-						Follower counts
-					</h2>
-					<button
-						class="cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950"
-						onclick={handleSavePlatforms}
-					>
-						Save platforms
+				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+					<div>
+						<h2 class="text-xl font-semibold tracking-tight">
+							Platforms
+						</h2>
+						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							Average reach is the previous 30 days. Twitch
+							followers update from Twitch.
+						</p>
+					</div>
+					<button class={primaryClass} onclick={handleSavePlatforms}>
+						Save
 					</button>
 				</div>
 
 				<div
-					class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5"
+					class="mb-2 hidden grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1.3fr)_7.5rem_9.5rem] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase lg:grid dark:text-gray-400"
 				>
-					{#each platforms as platform, index (platform.name)}
-						<div
-							class="rounded-2xl border border-gray-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900"
-						>
-							<div class="mb-4 text-sm font-semibold">
+					<span>Platform</span>
+					<span>Handle</span>
+					<span>URL</span>
+					<span>Followers</span>
+					<span title="Average reach (previous 30 days)">Avg reach</span>
+				</div>
+
+				<div class="flex flex-col gap-3">
+					<div class="{cardClass} {platformRowClass}">
+						<div class="text-sm font-semibold sm:col-span-2 lg:col-span-1">
+							Twitch
+						</div>
+						<div class="{labelClass} min-w-0">
+							<span class="lg:sr-only">Handle</span>
+							<div class="{controlClass} flex items-center text-gray-400">
+								From Twitch
+							</div>
+						</div>
+						<div class="{labelClass} min-w-0">
+							<span class="lg:sr-only">URL</span>
+							<div class="{controlClass} flex items-center text-gray-400">
+								From Twitch
+							</div>
+						</div>
+						<div class="{labelClass} min-w-0">
+							<span class="lg:sr-only">Followers</span>
+							<div class="{controlClass} flex items-center text-gray-400">
+								Live
+							</div>
+						</div>
+						<label class="{labelClass} min-w-0">
+							<span class="lg:sr-only">Avg reach (30 days)</span>
+							<input
+								class={controlClass}
+								type="number"
+								min="0"
+								step="1"
+								bind:value={content.twitch_avg_reach}
+							/>
+						</label>
+					</div>
+
+					{#each orderedPlatforms as platform (platform.name)}
+						{@const index = platforms.findIndex(
+							(item) => item.name === platform.name,
+						)}
+						<div class="{cardClass} {platformRowClass}">
+							<div
+								class="text-sm font-semibold sm:col-span-2 lg:col-span-1"
+							>
 								{titleCase(platform.name)}
 							</div>
-							<div class="grid grid-cols-1 gap-4">
-								<label
-									class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-								>
-									<span>Handle</span>
-									<input
-										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-										bind:value={platform.handle}
-									/>
-								</label>
-								<label
-									class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-								>
-									<span>URL</span>
-									<input
-										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-										bind:value={platform.url}
-									/>
-								</label>
-								<label
-									class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-								>
-									<span>Followers</span>
-									<input
-										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-										type="number"
-										min="0"
-										step="1"
-										bind:value={platform.followers}
-									/>
-								</label>
-							</div>
+							<label class="{labelClass} min-w-0">
+								<span class="lg:sr-only">Handle</span>
+								<input
+									class={controlClass}
+									bind:value={platforms[index].handle}
+								/>
+							</label>
+							<label class="{labelClass} min-w-0">
+								<span class="lg:sr-only">URL</span>
+								<input
+									class={controlClass}
+									bind:value={platforms[index].url}
+								/>
+							</label>
+							<label class="{labelClass} min-w-0">
+								<span class="lg:sr-only">
+									{platform.name.toLowerCase() === "youtube"
+										? "Subscribers"
+										: "Followers"}
+								</span>
+								<input
+									class={controlClass}
+									type="number"
+									min="0"
+									step="1"
+									bind:value={platforms[index].followers}
+								/>
+							</label>
+							<label class="{labelClass} min-w-0">
+								<span class="lg:sr-only">Avg reach (30 days)</span>
+								<input
+									class={controlClass}
+									type="number"
+									min="0"
+									step="1"
+									bind:value={platforms[index].avg_reach}
+								/>
+							</label>
 						</div>
 					{/each}
 				</div>
 			</section>
 
-			<section
-				class="border-t border-gray-200 pt-8 md:col-span-2 dark:border-zinc-800"
-			>
-				<div class="mb-5 flex items-center justify-between gap-4">
-					<h2 class="text-xl font-semibold tracking-tight">
-						Collaborations
-					</h2>
-					<div class="flex items-center gap-3">
-						<button
-							class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-85 dark:border-zinc-800 dark:text-neutral-50"
-							onclick={addCollab}
-						>
+			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
+				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+					<div>
+						<h2 class="text-xl font-semibold tracking-tight">
+							Collaborations
+						</h2>
+						<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							Order here is the order on the media kit.
+						</p>
+					</div>
+					<div class="flex items-center gap-2">
+						<button class={secondaryClass} onclick={addCollab}>
 							Add
 						</button>
-						<button
-							class="cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950"
-							onclick={handleSaveCollabs}
-						>
-							Save collaborations
+						<button class={primaryClass} onclick={handleSaveCollabs}>
+							Save
 						</button>
 					</div>
 				</div>
@@ -399,79 +560,67 @@
 						No collaborations yet.
 					</p>
 				{:else}
-					<div class="grid grid-cols-1 gap-5">
+					<div
+						class="mb-2 hidden grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase md:grid dark:text-gray-400"
+					>
+						<span>Name</span>
+						<span>Image</span>
+						<span>URL</span>
+						<span class="sr-only">Actions</span>
+					</div>
+					<div class="flex flex-col gap-3">
 						{#each collabs as collab, index (collab.id)}
 							<div
-								class="rounded-2xl border border-gray-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900"
+								class="{cardClass} grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center md:gap-3"
 							>
-								<div
-									class="mb-4 flex items-center justify-between gap-3"
-								>
-									<div class="text-sm font-semibold">
-										{collab.name || "New collaboration"}
-									</div>
-									<div class="flex items-center gap-2">
-										<button
-											class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-neutral-50"
-											disabled={index === 0}
-											onclick={() => moveCollab(index, -1)}
-										>
-											Up
-										</button>
-										<button
-											class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:text-neutral-50"
-											disabled={index === collabs.length - 1}
-											onclick={() => moveCollab(index, 1)}
-										>
-											Down
-										</button>
-										<button
-											class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-1.5 text-sm text-red-600 dark:border-zinc-800 dark:text-red-400"
-											onclick={() => removeCollab(index)}
-										>
-											Remove
-										</button>
-									</div>
-								</div>
-								<div
-									class="grid grid-cols-1 gap-4 md:grid-cols-3"
-								>
-									<label
-										class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-									>
-										<span>Name</span>
+								<label class="{labelClass} min-w-0">
+									<span class="md:sr-only">Name</span>
+									<input
+										class={controlClass}
+										bind:value={collab.name}
+									/>
+								</label>
+								<label class="{labelClass} min-w-0">
+									<span class="md:sr-only">Image</span>
+									<div class="flex items-center gap-3">
 										<input
-											class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-											bind:value={collab.name}
+											class={controlClass}
+											bind:value={collab.image}
 										/>
-									</label>
-									<label
-										class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-									>
-										<span>Image URL</span>
-										<div class="flex items-center gap-3">
-											<input
-												class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-												bind:value={collab.image}
+										{#if collab.image}
+											<img
+												class="h-10 w-10 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-zinc-800"
+												src={collab.image}
+												alt=""
 											/>
-											{#if collab.image}
-												<img
-													class="h-10 w-10 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-zinc-800"
-													src={collab.image}
-													alt=""
-												/>
-											{/if}
-										</div>
-									</label>
-									<label
-										class="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
+										{/if}
+									</div>
+								</label>
+								<label class="{labelClass} min-w-0">
+									<span class="md:sr-only">URL</span>
+									<input class={controlClass} bind:value={collab.url} />
+								</label>
+								<div class="flex items-center gap-2">
+									<button
+										class="{secondaryClass} px-3 disabled:cursor-not-allowed disabled:opacity-40"
+										disabled={index === 0}
+										onclick={() => moveCollab(index, -1)}
 									>
-										<span>URL</span>
-										<input
-											class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
-											bind:value={collab.url}
-										/>
-									</label>
+										Up
+									</button>
+									<button
+										class="{secondaryClass} px-3 disabled:cursor-not-allowed disabled:opacity-40"
+										disabled={index === collabs.length - 1}
+										onclick={() => moveCollab(index, 1)}
+									>
+										Down
+									</button>
+									<button
+										class={dangerClass}
+										onclick={() => removeCollab(index)}
+									>
+										Remove
+									</button>
 								</div>
 							</div>
 						{/each}
@@ -479,34 +628,27 @@
 				{/if}
 			</section>
 
-			<section
-				class="border-t border-gray-200 pt-8 md:col-span-2 dark:border-zinc-800"
-			>
-				<div class="mb-5 flex items-center justify-between gap-4">
+			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
+				<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
 					<div>
 						<h2 class="text-xl font-semibold tracking-tight">
-							Twitch views by location
+							Locations
 						</h2>
 						<p
 							class="mt-1 text-sm {locationTotal > 100
 								? 'text-red-600 dark:text-red-400'
 								: 'text-gray-500 dark:text-gray-400'}"
 						>
-							Total: {Math.round(locationTotal * 10) / 10}%
+							Twitch views by country · {Math.round(locationTotal * 10) /
+								10}%
 						</p>
 					</div>
-					<div class="flex items-center gap-3">
-						<button
-							class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-4 py-2.5 text-sm font-medium text-neutral-900 transition-opacity hover:opacity-85 dark:border-zinc-800 dark:text-neutral-50"
-							onclick={addLocation}
-						>
+					<div class="flex items-center gap-2">
+						<button class={secondaryClass} onclick={addLocation}>
 							Add
 						</button>
-						<button
-							class="cursor-pointer rounded-[10px] border border-transparent bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-85 dark:bg-neutral-50 dark:text-neutral-950"
-							onclick={handleSaveLocations}
-						>
-							Save locations
+						<button class={primaryClass} onclick={handleSaveLocations}>
+							Save
 						</button>
 					</div>
 				</div>
@@ -516,27 +658,30 @@
 						No locations yet.
 					</p>
 				{:else}
-					<div class="grid grid-cols-1 gap-3">
+					<div
+						class="mb-2 hidden grid-cols-[minmax(0,1fr)_8rem_auto] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase sm:grid dark:text-gray-400"
+					>
+						<span>Country</span>
+						<span>Percent</span>
+						<span class="sr-only">Actions</span>
+					</div>
+					<div class="flex flex-col gap-3">
 						{#each twitchLocations as location, index (location.id)}
 							<div
-								class="flex items-end gap-3 rounded-2xl border border-gray-200 bg-neutral-50 p-4 dark:border-zinc-800 dark:bg-neutral-900"
+								class="{cardClass} grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_8rem_auto] sm:items-center sm:gap-3"
 							>
-								<label
-									class="flex flex-1 flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-								>
-									<span>Country</span>
+								<label class="{labelClass} min-w-0">
+									<span class="sm:sr-only">Country</span>
 									<input
-										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+										class={controlClass}
 										placeholder="United States"
 										bind:value={location.country}
 									/>
 								</label>
-								<label
-									class="flex w-28 flex-col gap-2 text-sm text-gray-500 dark:text-gray-400"
-								>
-									<span>Percent</span>
+								<label class="{labelClass} min-w-0">
+									<span class="sm:sr-only">Percent</span>
 									<input
-										class="w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400"
+										class={controlClass}
 										type="number"
 										min="0"
 										max="100"
@@ -545,7 +690,7 @@
 									/>
 								</label>
 								<button
-									class="cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-2.5 text-sm text-red-600 dark:border-zinc-800 dark:text-red-400"
+									class={dangerClass}
 									onclick={() => removeLocation(index)}
 								>
 									Remove

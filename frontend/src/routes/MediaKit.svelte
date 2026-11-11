@@ -62,7 +62,11 @@
 						/>
 					{/if}
 				</div>
-				<Platforms {platforms} {twitch} />
+				<Platforms
+					{platforms}
+					{twitch}
+					twitchAvgReach={Number(content.twitch_avg_reach) || 0}
+				/>
 			</div>
 		</div>
 		<div

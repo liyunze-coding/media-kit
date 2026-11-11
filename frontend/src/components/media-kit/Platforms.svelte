@@ -5,9 +5,11 @@
 	let {
 		platforms = [],
 		twitch = null,
+		twitchAvgReach = null,
 	}: {
 		platforms?: Platform[];
 		twitch?: TwitchData | null;
+		twitchAvgReach?: number | null;
 	} = $props();
 </script>
 
@@ -17,6 +19,7 @@
 			handle={twitch?.display_name ?? ""}
 			href={`https://twitch.tv/${twitch?.login ?? ""}`}
 			followers={twitch?.followers}
+			avgReach={twitchAvgReach}
 		/>
 	{#each platforms as platform (platform.name)}
 		<PlatformCard
@@ -24,6 +27,7 @@
 			handle={platform.handle}
 			href={platform.url}
 			followers={platform.followers}
+			avgReach={platform.avg_reach}
 		/>
 	{/each}
 </div>

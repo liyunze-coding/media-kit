@@ -8,11 +8,13 @@
 		handle,
 		href,
 		followers,
+		avgReach = null,
 	}: {
 		name: string;
 		handle: string;
 		href: string;
 		followers?: number | null;
+		avgReach?: number | null;
 	} = $props();
 
 	let deco = $derived(platformImageMap[name.toLowerCase()]);
@@ -26,7 +28,7 @@
 		rel="noreferrer"
 		color={deco.color}
 	>
-		<div class="flex flex-row items-start justify-start gap-3">
+		<div class="flex flex-row items-center gap-3">
 			<img src={deco.image} alt={name} width="40" />
 			<div>
 				<span
@@ -36,9 +38,22 @@
 				</span>
 				<br />
 				<span class="text-base">{handle}</span>
-				<div class="mt-2 text-2xl font-semibold tracking-tight">
+			</div>
+		</div>
+		<div class="mt-4 grid grid-cols-2 gap-3">
+			<div>
+				<div class="text-2xl font-semibold tracking-tight">
 					{formatCount(followers)}
-					<span class="text-sm">{metricLabel(name)}</span>
+				</div>
+				<div class="text-sm text-zinc-400">{metricLabel(name)}</div>
+			</div>
+			<div title="Average reach (previous 30 days)">
+				<div class="text-2xl font-semibold tracking-tight">
+					{formatCount(avgReach)}
+				</div>
+				<div class="text-sm leading-tight text-zinc-400">
+					avg reach
+					<span class="block text-xs whitespace-nowrap">prev. 30 days</span>
 				</div>
 			</div>
 		</div>
