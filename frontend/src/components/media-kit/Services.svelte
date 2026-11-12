@@ -12,7 +12,9 @@
 
 {#if items.length}
 	<section class="w-full">
-		<div class="mb-3 text-3xl font-bold text-white sm:text-4xl">Services</div>
+		<div class="mb-3 text-3xl font-bold text-white sm:text-3xl">
+			Services
+		</div>
 		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-8">
 			<ul class="list-disc space-y-2 pl-5 marker:text-cyan-300">
 				{#each items.slice(0, 3) as service}

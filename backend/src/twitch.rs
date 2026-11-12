@@ -52,7 +52,7 @@ async fn fetch_twitch(state: &AppState) -> Result<Value, String> {
         .to_string();
 
     let stream_query = [("user_id", user_id.as_str())];
-    let (followers, streams) = tokio::join!(
+    let (followers, streams, last_stream) = tokio::join!(
         get_follower_count(state, &token, &user_id),
         helix_get(
             state,
@@ -60,6 +60,7 @@ async fn fetch_twitch(state: &AppState) -> Result<Value, String> {
             "https://api.twitch.tv/helix/streams",
             &stream_query,
         ),
+        get_last_stream(state, &token, &user_id),
     );
 
     let stream = streams
@@ -80,8 +81,57 @@ async fn fetch_twitch(state: &AppState) -> Result<Value, String> {
         "title": stream.get("title").cloned().unwrap_or(Value::Null),
         "game_name": stream.get("game_name").cloned().unwrap_or(Value::Null),
         "viewer_count": stream.get("viewer_count").cloned().unwrap_or(Value::Null),
+        "started_at": stream.get("started_at").cloned().unwrap_or(Value::Null),
+        "last_stream": last_stream,
         "updated_at": now_secs(),
     }))
+}
+
+async fn get_last_stream(state: &AppState, token: &str, user_id: &str) -> Value {
+    let video_query = [("user_id", user_id), ("type", "archive"), ("first", "1")];
+    let channel_query = [("broadcaster_id", user_id)];
+    let (videos, channels) = tokio::join!(
+        helix_get(
+            state,
+            token,
+            "https://api.twitch.tv/helix/videos",
+            &video_query,
+        ),
+        helix_get(
+            state,
+            token,
+            "https://api.twitch.tv/helix/channels",
+            &channel_query,
+        ),
+    );
+
+    let first = |body: Result<Value, String>| {
+        body.ok()
+            .and_then(|body| body.get("data").and_then(|data| data.get(0)).cloned())
+            .unwrap_or(Value::Null)
+    };
+    let video = first(videos);
+    let channel = first(channels);
+
+    if video.is_null() && channel.is_null() {
+        return Value::Null;
+    }
+
+    // VODs carry no category, so the channel's current category stands in for it.
+    let field = |source: &Value, key: &str| source.get(key).cloned().unwrap_or(Value::Null);
+    let title = match field(&video, "title") {
+        Value::Null => field(&channel, "title"),
+        title => title,
+    };
+
+    json!({
+        "title": title,
+        "game_name": field(&channel, "game_name"),
+        "started_at": field(&video, "created_at"),
+        "duration": field(&video, "duration"),
+        "view_count": field(&video, "view_count"),
+        "url": field(&video, "url"),
+    })
 }
 
 async fn get_follower_count(state: &AppState, token: &str, user_id: &str) -> i64 {

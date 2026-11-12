@@ -19,6 +19,15 @@ export interface TwitchLocation {
   percent: number;
 }
 
+export interface LastStream {
+  title?: string | null;
+  game_name?: string | null;
+  started_at?: string | null;
+  duration?: string | null;
+  view_count?: number | null;
+  url?: string | null;
+}
+
 export interface TwitchData {
   configured?: boolean;
   found?: boolean;
@@ -30,6 +39,8 @@ export interface TwitchData {
   title?: string;
   game_name?: string;
   viewer_count?: number;
+  started_at?: string | null;
+  last_stream?: LastStream | null;
   updated_at?: number;
   message?: string;
 }

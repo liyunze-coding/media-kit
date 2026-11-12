@@ -64,7 +64,16 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
         "#,
     )?;
     migrate(conn)?;
+    remove_retired_content(conn)?;
     seed(conn)
+}
+
+fn remove_retired_content(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute(
+        "DELETE FROM content WHERE key IN ('demographics_age', 'demographics_gender', 'demographics_location')",
+        [],
+    )?;
+    Ok(())
 }
 
 fn migrate(conn: &Connection) -> rusqlite::Result<()> {
@@ -113,6 +122,7 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
             "Sponsored content\nProduct reviews\nLivestream integrations\nSocial media campaigns\nBrand partnerships\nEvent appearances",
         ),
         ("twitch_avg_reach", "35"),
+        ("stream_schedule", ""),
     ];
 
     for (key, value) in content_defaults {

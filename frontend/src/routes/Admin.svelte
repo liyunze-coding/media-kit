@@ -62,9 +62,10 @@
 		profile_image_url: "Profile image",
 		about: "About",
 		services: "Services",
+		stream_schedule: "Stream schedule",
 	};
 	const primaryContentKeys = ["brand_name", "tagline", "email"] as const;
-	const longContentKeys = ["about", "services"] as const;
+	const longContentKeys = ["about", "services", "stream_schedule"] as const;
 	const reservedContentKeys = new Set<string>([
 		"twitch_avg_reach",
 		"profile_image_url",
@@ -256,7 +257,7 @@
 			>
 				CMS
 			</p>
-			<h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
+			<h1 class="text-3xl font-semibold tracking-tight sm:text-3xl">
 				RythonDev media kit
 			</h1>
 		</div>
@@ -382,6 +383,10 @@
 									{#if key === "services"}
 										<span class="font-normal text-gray-400">
 											· one per line
+										</span>
+									{:else if key === "stream_schedule"}
+										<span class="font-normal text-gray-400">
+											· shown when offline
 										</span>
 									{/if}
 								</span>

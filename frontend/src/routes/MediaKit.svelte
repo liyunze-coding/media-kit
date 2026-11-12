@@ -4,6 +4,7 @@
 	import type { MediaKit } from "../lib/types";
 	import Collabs from "../components/Collabs.svelte";
 	import About from "../components/media-kit/About.svelte";
+	import Contact from "../components/media-kit/Contact.svelte";
 	import Intro from "../components/media-kit/Intro.svelte";
 	import Platforms from "../components/media-kit/Platforms.svelte";
 	import ProfileImage from "../components/media-kit/ProfileImage.svelte";
@@ -67,6 +68,9 @@
 					{twitch}
 					twitchAvgReach={Number(content.twitch_avg_reach) || 0}
 				/>
+				<div class="mt-10">
+					<TwitchLocations locations={twitchLocations} />
+				</div>
 			</div>
 		</div>
 		<div
@@ -74,16 +78,20 @@
 		>
 			<Intro name="RythonDev" tagline={content.tagline ?? ""} />
 			<About about={content.about ?? ""} />
+			<Contact
+				email={content.email ?? ""}
+				schedule={content.stream_schedule ?? ""}
+				{twitch}
+			/>
 			{#if collabs.length}
 				<div>
-					<div class="mb-2 text-3xl font-bold text-white sm:text-4xl">
+					<div class="mb-2 text-3xl font-bold text-white sm:text-3xl">
 						Collaborations
 					</div>
 					<Collabs items={collabs} />
 				</div>
 			{/if}
 			<Services services={content.services ?? ""} />
-			<TwitchLocations locations={twitchLocations} />
 		</div>
 	</main>
 {/if}

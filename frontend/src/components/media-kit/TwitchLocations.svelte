@@ -16,7 +16,7 @@
 
 {#if sorted.length}
 	<section class="w-full">
-		<div class="mb-3 text-3xl font-bold text-white sm:text-4xl">
+		<div class="mb-3 text-3xl font-bold text-white sm:text-3xl text-right">
 			Twitch Views by Location
 		</div>
 		<ul
