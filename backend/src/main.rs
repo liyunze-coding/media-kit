@@ -8,7 +8,8 @@ mod util;
 
 use axum::{
     Router,
-    routing::{get, put},
+    extract::DefaultBodyLimit,
+    routing::{get, post, put},
 };
 use state::AppState;
 use std::sync::{Arc, Mutex};
@@ -47,6 +48,16 @@ async fn main() {
         }
     }
 
+    let uploads_dir = std::env::var("UPLOADS_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::path::Path::new(&db_path)
+                .parent()
+                .unwrap_or(std::path::Path::new(""))
+                .join("uploads")
+        });
+    std::fs::create_dir_all(&uploads_dir).expect("failed to create uploads directory");
+
     let conn = rusqlite::Connection::open(&db_path).expect("failed to open database");
     db::init(&conn).expect("failed to initialize database");
 
@@ -62,6 +73,7 @@ async fn main() {
         twitch_login: env_or("TWITCH_LOGIN", "rythondev"),
         admin_user: env_or("ADMIN_USER", "admin"),
         admin_password: env_or("ADMIN_PASSWORD", "change-me"),
+        uploads_dir: uploads_dir.clone(),
     };
 
     let static_dir = env_or("STATIC_DIR", "frontend/dist");
@@ -77,6 +89,11 @@ async fn main() {
             "/api/admin/twitch-locations",
             put(api::admin_update_twitch_locations),
         )
+        .route(
+            "/api/admin/upload",
+            post(api::admin_upload_image).layer(DefaultBodyLimit::max(api::MAX_UPLOAD_BYTES)),
+        )
+        .nest_service("/uploads", ServeDir::new(&uploads_dir))
         .fallback_service(ServeDir::new(&static_dir).append_index_html_on_directories(true))
         .with_state(app_state);
 

@@ -95,6 +95,24 @@ async function readError(res: Response, fallback: string): Promise<string> {
   return typeof data?.error === "string" ? data.error : fallback;
 }
 
+export async function uploadImage(file: File): Promise<string> {
+  const res = await fetch("/api/admin/upload", {
+    method: "POST",
+    headers: { "Content-Type": file.type, ...authHeaders() },
+    body: file,
+  });
+
+  if (res.status === 401) {
+    clearStoredToken();
+    throw new Error("unauthorized");
+  }
+  if (res.status === 413) throw new Error("Image must be 5 MB or smaller");
+  if (!res.ok) throw new Error(await readError(res, "Failed to upload image"));
+
+  const data = await res.json();
+  return data.url;
+}
+
 export async function updateCollabs(collabs: Collab[]): Promise<Collab[]> {
   const res = await fetch("/api/admin/collabs", {
     method: "PUT",

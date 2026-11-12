@@ -1,10 +1,12 @@
 use axum::{
     Json,
+    body::Bytes,
     extract::State,
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, header::CONTENT_TYPE},
 };
 use serde_json::{Value, json};
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::auth::is_authorized;
 use crate::db::{self, CollabInput, PlatformInput, TwitchLocationInput};
@@ -13,6 +15,7 @@ use crate::twitch;
 
 const MEDIA_KIT_CACHE_KEY: &str = "media_kit";
 const TTL_SECS: u64 = 300;
+pub const MAX_UPLOAD_BYTES: usize = 5 * 1024 * 1024;
 
 type ApiError = (StatusCode, Json<Value>);
 
@@ -196,6 +199,42 @@ pub async fn admin_update_collabs(
     let saved = db::get_collabs(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({ "collabs": saved })))
+}
+
+pub async fn admin_upload_image(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&state, &headers)?;
+
+    let content_type = headers
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("");
+    let extension = match content_type {
+        "image/png" => "png",
+        "image/jpeg" => "jpg",
+        "image/webp" => "webp",
+        "image/gif" => "gif",
+        "image/avif" => "avif",
+        _ => return Err(bad_request("Image must be PNG, JPEG, WebP, GIF, or AVIF")),
+    };
+    if body.is_empty() {
+        return Err(bad_request("Image is empty"));
+    }
+
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(internal_error)?
+        .as_nanos();
+    let filename = format!("{stamp}.{extension}");
+
+    tokio::fs::write(state.uploads_dir.join(&filename), &body)
+        .await
+        .map_err(internal_error)?;
+
+    Ok(Json(json!({ "url": format!("/uploads/{filename}") })))
 }
 
 pub async fn admin_update_twitch_locations(

@@ -1,8 +1,10 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { fetchMediaKit } from "../lib/api";
+    import { theme } from "../lib/theme.svelte";
     import type { MediaKit } from "../lib/types";
     import Collabs from "../components/Collabs.svelte";
+    import ThemeToggle from "../components/ThemeToggle.svelte";
     import About from "../components/media-kit/About.svelte";
     import Contact from "../components/media-kit/Contact.svelte";
     import Intro from "../components/media-kit/Intro.svelte";
@@ -27,6 +29,11 @@
     let collabs = $derived(data?.collabs ?? []);
     let twitch = $derived(data?.twitch);
     let twitchLocations = $derived(data?.twitch_locations ?? []);
+    let profileImage = $derived(
+        theme.current === "light"
+            ? content.profile_image_light_url || content.profile_image_url
+            : content.profile_image_url || content.profile_image_light_url,
+    );
 
     let startYear = "2026";
     let copyrightDate = $state(`${new Date().getFullYear()}`);
@@ -37,6 +44,8 @@
         }
     })();
 </script>
+
+<ThemeToggle class="fixed top-4 right-4 z-50" />
 
 {#if error}
     <main class="mx-auto w-full max-w-230 px-6 pt-12 pb-18">
@@ -54,10 +63,10 @@
     <main
         class="mx-auto grid w-full max-w-6xl grid-cols-1 gap-10 px-4 pt-8 pb-10 sm:px-6 lg:grid-cols-2 lg:px-0 lg:pt-20"
     >
-        {#if content.profile_image_url}
+        {#if profileImage}
             <div class="flex justify-center lg:hidden">
                 <ProfileImage
-                    src={content.profile_image_url}
+                    src={profileImage}
                     alt={content.brand_name ?? "Profile image"}
                 />
             </div>
@@ -65,9 +74,9 @@
         <div class="order-2 lg:order-1">
             <div class="lg:px-5">
                 <div class="hidden items-start justify-end lg:flex">
-                    {#if content.profile_image_url}
+                    {#if profileImage}
                         <ProfileImage
-                            src={content.profile_image_url}
+                            src={profileImage}
                             alt={content.brand_name ?? "Profile image"}
                         />
                     {/if}
@@ -94,7 +103,9 @@
             />
             {#if collabs.length}
                 <div>
-                    <div class="mb-2 text-3xl font-bold text-white sm:text-3xl">
+                    <div
+                        class="mb-2 text-3xl font-bold text-neutral-900 sm:text-3xl dark:text-white"
+                    >
                         Collaborations
                     </div>
                     <Collabs items={collabs} />
@@ -111,7 +122,7 @@
             <a
                 href="https://git.rython.dev/rythondev/media-kit"
                 target="_blank"
-                class="text-white hover:text-cyan-300 underline"
+                class="text-neutral-900 underline hover:text-cyan-600 dark:text-white dark:hover:text-cyan-300"
             >
                 Source Code
             </a>

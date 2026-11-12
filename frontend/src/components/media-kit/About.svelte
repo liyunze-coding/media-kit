@@ -3,7 +3,11 @@
 </script>
 
 <div class="mt-5">
-	<div class="mb-2 text-3xl font-bold text-white sm:text-3xl">About Me</div>
+	<div
+		class="mb-2 text-3xl font-bold text-neutral-900 sm:text-3xl dark:text-white"
+	>
+		About Me
+	</div>
 	<p class="wrap-break-word">
 		{about}
 	</p>

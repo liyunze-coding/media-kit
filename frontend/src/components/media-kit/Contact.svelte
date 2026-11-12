@@ -47,20 +47,22 @@
 
 {#if email || live || lastStream || schedule}
 	<section class="w-full">
-		<div class="mb-3 text-3xl font-bold text-white sm:text-3xl">
+		<div
+			class="mb-3 text-3xl font-bold text-neutral-900 sm:text-3xl dark:text-white"
+		>
 			Work With Me
 		</div>
 		<div
-			class="flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-neutral-900 p-5"
+			class="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900"
 		>
 			{#if email}
 				<div class="flex flex-wrap items-center justify-between gap-3">
 					<div class="min-w-0">
-						<div class="text-sm text-zinc-400">
+						<div class="text-sm text-zinc-500 dark:text-zinc-400">
 							Business inquiries
 						</div>
 						<a
-							class="block truncate text-lg font-semibold text-cyan-300 hover:underline"
+							class="block truncate text-lg font-semibold text-cyan-700 hover:underline dark:text-cyan-300"
 							href={`mailto:${email}`}
 						>
 							{email}
@@ -68,7 +70,7 @@
 					</div>
 					<div class="flex items-center gap-2">
 						<button
-							class="cursor-pointer rounded-lg border border-zinc-700 px-3 py-2 text-sm transition-colors hover:border-cyan-300"
+							class="cursor-pointer rounded-lg border border-zinc-300 px-3 py-2 text-sm transition-colors hover:border-cyan-600 dark:border-zinc-700 dark:hover:border-cyan-300"
 							onclick={copyEmail}
 						>
 							{copied ? "Copied!" : "Copy"}
@@ -85,7 +87,7 @@
 
 			{#if live}
 				<a
-					class="flex items-center gap-3 border-t border-zinc-800 pt-4 first:border-t-0 first:pt-0"
+					class="flex items-center gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800 first:border-t-0 first:pt-0"
 					href={twitchUrl}
 					target="_blank"
 					rel="noreferrer"
@@ -114,7 +116,7 @@
 							{twitch?.title || "Streaming now"}
 						</div>
 						{#if twitch?.game_name}
-							<div class="truncate text-sm text-zinc-400">
+							<div class="truncate text-sm text-zinc-500 dark:text-zinc-400">
 								{twitch.game_name}
 							</div>
 						{/if}
@@ -124,22 +126,22 @@
 							<div class="font-semibold tabular-nums">
 								{formatCount(twitch.viewer_count)}
 							</div>
-							<div class="text-xs text-zinc-400">watching</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400">watching</div>
 						</div>
 					{/if}
 				</a>
 			{:else if lastStream}
 				<a
-					class="flex items-center gap-3 border-t border-zinc-800 pt-4 first:border-t-0 first:pt-0"
+					class="flex items-center gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800 first:border-t-0 first:pt-0"
 					href={lastStream.url || twitchUrl}
 					target="_blank"
 					rel="noreferrer"
 				>
-					<span class="h-3 w-3 shrink-0 rounded-full bg-zinc-600"
+					<span class="h-3 w-3 shrink-0 rounded-full bg-zinc-400 dark:bg-zinc-600"
 					></span>
 					<div class="min-w-0 flex-1">
 						<div
-							class="text-xs font-semibold tracking-[0.08em] text-zinc-400 uppercase"
+							class="text-xs font-semibold tracking-[0.08em] text-zinc-500 dark:text-zinc-400 uppercase"
 						>
 							Last stream{lastStreamAgo
 								? ` · ${lastStreamAgo}`
@@ -152,7 +154,7 @@
 							{lastStream.title || "Offline"}
 						</div>
 						{#if lastStreamMeta}
-							<div class="truncate text-sm text-zinc-400">
+							<div class="truncate text-sm text-zinc-500 dark:text-zinc-400">
 								{lastStreamMeta}
 							</div>
 						{/if}
@@ -162,7 +164,7 @@
 							<div class="font-semibold tabular-nums">
 								{formatCount(lastStream.view_count)}
 							</div>
-							<div class="text-xs text-zinc-400">views</div>
+							<div class="text-xs text-zinc-500 dark:text-zinc-400">views</div>
 						</div>
 					{/if}
 				</a>
@@ -170,7 +172,7 @@
 
 			{#if !live && schedule}
 				<div
-					class="flex items-start gap-3 border-t border-zinc-800 pt-4 first:border-t-0 first:pt-0"
+					class="flex items-start gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800 first:border-t-0 first:pt-0"
 				>
 					<img
 						src={platformImageMap.twitch.image}
@@ -179,7 +181,7 @@
 						class="mt-0.5 shrink-0"
 					/>
 					<div class="min-w-0">
-						<div class="text-sm text-zinc-400">Stream schedule</div>
+						<div class="text-sm text-zinc-500 dark:text-zinc-400">Stream schedule</div>
 						<div class="whitespace-pre-line">{schedule}</div>
 					</div>
 				</div>

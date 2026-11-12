@@ -16,11 +16,13 @@
 
 {#if sorted.length}
 	<section class="w-full">
-		<div class="mb-3 text-3xl font-bold text-white sm:text-3xl text-right">
+		<div
+			class="mb-3 text-right text-3xl font-bold text-neutral-900 sm:text-3xl dark:text-white"
+		>
 			Twitch Views by Location
 		</div>
 		<ul
-			class="space-y-3 rounded-2xl border border-zinc-800 bg-neutral-900 p-5"
+			class="space-y-3 rounded-2xl border border-zinc-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900"
 		>
 			{#each sorted as location (location.id)}
 				<li
@@ -29,7 +31,7 @@
 					<span class="truncate" title={location.country}>
 						{location.country}
 					</span>
-					<div class="h-1 overflow-hidden rounded-full bg-zinc-800">
+					<div class="h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
 						<div
 							class="h-full rounded-full"
 							style:width={`${Math.min(location.percent, 100)}%`}

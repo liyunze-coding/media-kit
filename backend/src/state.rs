@@ -1,6 +1,7 @@
 use crate::cache::Cache;
 use reqwest::Client;
 use rusqlite::Connection;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
@@ -13,4 +14,5 @@ pub struct AppState {
     pub twitch_login: String,
     pub admin_user: String,
     pub admin_password: String,
+    pub uploads_dir: PathBuf,
 }

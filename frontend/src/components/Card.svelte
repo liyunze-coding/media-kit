@@ -32,7 +32,6 @@
 <style>
     .card {
         position: relative;
-        border: 1px solid rgb(255 255 255 / 5%);
         border-radius: 1.5rem;
         padding: 1rem;
     }

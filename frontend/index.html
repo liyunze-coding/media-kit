@@ -16,6 +16,19 @@
 		<meta name="theme-color" content="#54E9FA" />
 		<meta name="twitter:image" content="/images/preview.webp" />
 		<title>RythonDev's Media Kit</title>
+		<script>
+			(() => {
+				let stored = null;
+				try {
+					stored = localStorage.getItem("theme");
+				} catch {}
+				const dark =
+					stored === "dark" ||
+					(stored !== "light" &&
+						window.matchMedia("(prefers-color-scheme: dark)").matches);
+				document.documentElement.classList.toggle("dark", dark);
+			})();
+		</script>
 	</head>
 	<body
 		class="bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-50"

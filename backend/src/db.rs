@@ -117,6 +117,7 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
         ("about", "I build games and stream the process on Twitch."),
         ("email", "hello@rython.dev"),
         ("profile_image_url", "/images/pfp_new_medium.webp"),
+        ("profile_image_light_url", ""),
         (
             "services",
             "Sponsored content\nProduct reviews\nLivestream integrations\nSocial media campaigns\nBrand partnerships\nEvent appearances",

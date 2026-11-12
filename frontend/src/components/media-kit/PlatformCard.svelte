@@ -22,7 +22,7 @@
 
 {#if deco}
 	<Card
-		className="flex flex-col gap-1 rounded-2xl border p-5 transition-colors border-zinc-800 bg-neutral-900"
+		className="flex flex-col gap-1 rounded-2xl border p-5 transition-colors border-zinc-200 bg-neutral-50 dark:border-white/5 dark:bg-neutral-900"
 		{href}
 		target="_blank"
 		rel="noreferrer"
@@ -32,7 +32,7 @@
 			<img src={deco.image} alt={name} width="40" />
 			<div>
 				<span
-					class="text-sm font-semibold tracking-[0.08em] text-white uppercase"
+					class="text-sm font-semibold tracking-[0.08em] text-neutral-900 uppercase dark:text-white"
 				>
 					{name}
 				</span>
@@ -45,13 +45,17 @@
 				<div class="text-2xl font-semibold tracking-tight">
 					{formatCount(followers)}
 				</div>
-				<div class="text-sm text-zinc-400">{metricLabel(name)}</div>
+				<div class="text-sm text-zinc-500 dark:text-zinc-400">
+					{metricLabel(name)}
+				</div>
 			</div>
 			<div title="Average reach (previous 30 days)">
 				<div class="text-2xl font-semibold tracking-tight">
 					{formatCount(avgReach)}
 				</div>
-				<div class="text-sm leading-tight text-zinc-400">
+				<div
+					class="text-sm leading-tight text-zinc-500 dark:text-zinc-400"
+				>
 					avg reach
 					<span class="block text-xs whitespace-nowrap">prev. 30 days</span>
 				</div>

@@ -18,7 +18,8 @@ export const platformImageMap: Record<string, PlatformDeco> = {
 	},
 	tiktok: {
 		image: "/images/logos/tiktok.svg",
-		color: "#FFFFFF",
+		// Follows the text colour so the hover accent stays visible in both themes.
+		color: "currentColor",
 	},
 };
 

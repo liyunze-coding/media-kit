@@ -8,9 +8,11 @@
 		updateContent,
 		updatePlatforms,
 		updateTwitchLocations,
+		uploadImage,
 		verifyAdmin,
 	} from "../lib/api";
 	import type { Collab, Platform, TwitchLocation } from "../lib/types";
+	import ThemeToggle from "../components/ThemeToggle.svelte";
 
 	let authed = $state(false);
 	let loading = $state(true);
@@ -25,6 +27,7 @@
 	let nextCollabId = -1;
 	let twitchLocations = $state<TwitchLocation[]>([]);
 	let nextLocationId = -1;
+	let uploadingKey = $state<string | null>(null);
 	let locationTotal = $derived(
 		twitchLocations.reduce(
 			(sum, location) => sum + (Number(location.percent) || 0),
@@ -59,16 +62,21 @@
 		brand_name: "Brand name",
 		tagline: "Tagline",
 		email: "Email",
-		profile_image_url: "Profile image",
+		profile_image_url: "PFP dark mode",
+		profile_image_light_url: "PFP light mode",
 		about: "About",
 		services: "Services",
 		stream_schedule: "Stream schedule",
 	};
 	const primaryContentKeys = ["brand_name", "tagline", "email"] as const;
 	const longContentKeys = ["about", "services", "stream_schedule"] as const;
+	const profileImageKeys = [
+		"profile_image_url",
+		"profile_image_light_url",
+	] as const;
 	const reservedContentKeys = new Set<string>([
 		"twitch_avg_reach",
-		"profile_image_url",
+		...profileImageKeys,
 		...primaryContentKeys,
 		...longContentKeys,
 	]);
@@ -165,6 +173,43 @@
 		} catch (err) {
 			error =
 				err instanceof Error ? err.message : "Unable to save content";
+		}
+	}
+
+	async function saveProfileImage(key: string, url: string) {
+		const saved = await updateContent({ [key]: url });
+		content[key] = saved[key] ?? "";
+	}
+
+	async function handleProfileImageUpload(key: string, event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = "";
+		if (!file) return;
+
+		error = "";
+		message = "";
+		uploadingKey = key;
+		try {
+			await saveProfileImage(key, await uploadImage(file));
+			message = "Profile picture updated";
+		} catch (err) {
+			error =
+				err instanceof Error ? err.message : "Unable to upload image";
+		} finally {
+			uploadingKey = null;
+		}
+	}
+
+	async function handleProfileImageRemove(key: string) {
+		error = "";
+		message = "";
+		try {
+			await saveProfileImage(key, "");
+			message = "Profile picture removed";
+		} catch (err) {
+			error =
+				err instanceof Error ? err.message : "Unable to remove image";
 		}
 	}
 
@@ -268,6 +313,7 @@
 			>
 				View media kit
 			</a>
+			<ThemeToggle />
 			{#if authed}
 				<button class={secondaryClass} onclick={handleLogout}>
 					Log out
@@ -355,24 +401,63 @@
 					{/each}
 				</div>
 
-				{#if "profile_image_url" in content}
-					<label class="{labelClass} mt-4">
-						<span>Profile image</span>
-						<div class="flex items-center gap-3">
-							<input
-								class={controlClass}
-								bind:value={content.profile_image_url}
-							/>
-							{#if content.profile_image_url}
-								<img
-									class="h-12 w-12 shrink-0 rounded-full border border-gray-200 object-cover dark:border-zinc-800"
-									src={content.profile_image_url}
-									alt=""
-								/>
-							{/if}
+				<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+					{#each profileImageKeys as key}
+						<div class={labelClass}>
+							<span>
+								{titleCase(key)}
+								{#if key === "profile_image_light_url"}
+									<span class="font-normal text-gray-400">
+										· falls back to dark mode
+									</span>
+								{/if}
+							</span>
+							<div class="flex items-center gap-3">
+								{#if content[key]}
+									<img
+										class="h-12 w-12 shrink-0 rounded-full border border-gray-200 object-cover dark:border-zinc-800"
+										src={content[key]}
+										alt=""
+									/>
+								{:else}
+									<div
+										class="h-12 w-12 shrink-0 rounded-full border border-dashed border-gray-300 dark:border-zinc-700"
+									></div>
+								{/if}
+								<label
+									class="{secondaryClass} {uploadingKey ===
+									key
+										? 'pointer-events-none opacity-50'
+										: ''}"
+								>
+									{uploadingKey === key
+										? "Uploading…"
+										: content[key]
+											? "Replace"
+											: "Upload"}
+									<input
+										class="sr-only"
+										type="file"
+										accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+										disabled={uploadingKey !== null}
+										onchange={(event) =>
+											handleProfileImageUpload(key, event)}
+									/>
+								</label>
+								{#if content[key]}
+									<button
+										class={dangerClass}
+										disabled={uploadingKey !== null}
+										onclick={() =>
+											handleProfileImageRemove(key)}
+									>
+										Remove
+									</button>
+								{/if}
+							</div>
 						</div>
-					</label>
-				{/if}
+					{/each}
+				</div>
 
 				<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
 					{#each longContentKeys as key}
