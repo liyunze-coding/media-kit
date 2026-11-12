@@ -16,7 +16,7 @@
         >
             Services
         </div>
-        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-8">
+        <div class="">
             <ul
                 class="list-disc space-y-2 pl-5 marker:text-cyan-600 dark:marker:text-cyan-300"
             >
