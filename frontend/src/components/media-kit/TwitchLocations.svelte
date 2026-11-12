@@ -9,8 +9,6 @@
 			.filter((location) => location.percent > 0)
 			.sort((a, b) => b.percent - a.percent),
 	);
-	let max = $derived(Math.max(...sorted.map((location) => location.percent), 0));
-
 	function formatPercent(value: number): string {
 		return `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
 	}
@@ -31,11 +29,12 @@
 					<span class="truncate" title={location.country}>
 						{location.country}
 					</span>
-					<div class="h-3 overflow-hidden rounded-full bg-zinc-800">
+					<div class="h-1 overflow-hidden rounded-full bg-zinc-800">
 						<div
 							class="h-full rounded-full"
-							style:width={`${(location.percent / max) * 100}%`}
-							style:background-color={platformImageMap.twitch.color}
+							style:width={`${Math.min(location.percent, 100)}%`}
+							style:background-color={platformImageMap.twitch
+								.color}
 						></div>
 					</div>
 					<span class="text-right font-semibold tabular-nums">
