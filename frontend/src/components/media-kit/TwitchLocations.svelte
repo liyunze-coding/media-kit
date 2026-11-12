@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TwitchLocation } from "../../lib/types";
-	import { platformImageMap } from "../../lib/platforms";
+	import Panel from "./Panel.svelte";
 
 	let { locations = [] }: { locations?: TwitchLocation[] } = $props();
 
@@ -9,41 +9,50 @@
 			.filter((location) => location.percent > 0)
 			.sort((a, b) => b.percent - a.percent),
 	);
+	let visible = $state(false);
+
+	function revealOnce(node: HTMLElement) {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((entry) => entry.isIntersecting)) {
+					visible = true;
+					observer.disconnect();
+				}
+			},
+			{ threshold: 0.2 },
+		);
+		observer.observe(node);
+		return { destroy: () => observer.disconnect() };
+	}
+
 	function formatPercent(value: number): string {
 		return `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
 	}
 </script>
 
 {#if sorted.length}
-	<section class="w-full">
-		<div
-			class="mb-3 text-right text-3xl font-bold text-neutral-900 sm:text-3xl dark:text-white"
-		>
-			Twitch Views by Location
-		</div>
-		<ul
-			class="space-y-3 rounded-2xl border border-zinc-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900"
-		>
+	<Panel title="Twitch Views by Location">
+		<ul class="space-y-4" use:revealOnce>
 			{#each sorted as location (location.id)}
-				<li
-					class="grid grid-cols-[minmax(0,8rem)_1fr_3.5rem] items-center gap-3 text-sm"
-				>
-					<span class="truncate" title={location.country}>
-						{location.country}
-					</span>
-					<div class="h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+				<li class="text-sm">
+					<div class="mb-1.5 flex items-baseline justify-between gap-3">
+						<span class="truncate" title={location.country}>
+							{location.country}
+						</span>
+						<span class="font-semibold tabular-nums">
+							{formatPercent(location.percent)}
+						</span>
+					</div>
+					<div
+						class="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+					>
 						<div
-							class="h-full rounded-full"
-							style:width={`${Math.min(location.percent, 100)}%`}
-							style:background-color={platformImageMap.twitch
-								.color}
+							class="h-full rounded-full bg-cyan-500 transition-[width] duration-1000 ease-out motion-reduce:transition-none dark:bg-cyan-400"
+							style:width={visible ? `${Math.min(location.percent, 100)}%` : "0%"}
 						></div>
 					</div>
-					<span class="text-right font-semibold tabular-nums">
-						{formatPercent(location.percent)}
-					</span>
 				</li>
 			{/each}
 		</ul>
-	</section>
+	</Panel>
 {/if}

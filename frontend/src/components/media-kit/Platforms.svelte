@@ -5,29 +5,27 @@
 	let {
 		platforms = [],
 		twitch = null,
-		twitchAvgReach = null,
 	}: {
 		platforms?: Platform[];
 		twitch?: TwitchData | null;
-		twitchAvgReach?: number | null;
 	} = $props();
 </script>
 
-	<div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-		<PlatformCard
-			name="Twitch"
-			handle={twitch?.display_name ?? ""}
-			href={`https://twitch.tv/${twitch?.login ?? ""}`}
-			followers={twitch?.followers}
-			avgReach={twitchAvgReach}
-		/>
+<div
+	class="flex flex-row items-start justify-center gap-x-4 gap-y-8 sm:gap-x-8"
+>
+	<PlatformCard
+		name="Twitch"
+		handle={twitch?.display_name || twitch?.login || ""}
+		href={`https://twitch.tv/${twitch?.login ?? ""}`}
+		followers={twitch?.followers}
+	/>
 	{#each platforms as platform (platform.name)}
 		<PlatformCard
 			name={platform.name}
 			handle={platform.handle}
 			href={platform.url}
 			followers={platform.followers}
-			avgReach={platform.avg_reach}
 		/>
 	{/each}
 </div>

@@ -66,10 +66,10 @@
 							class="absolute left-1/2 -top-10 z-50 flex -translate-x-1/2 flex-col items-center justify-center rounded-md bg-gray-700 px-4 py-2 text-xs shadow-xl"
 						>
 							<div
-								class="absolute inset-x-10 -bottom-px z-30 h-px w-[20%] bg-linear-to-r from-transparent via-emerald-500 to-transparent"
+								class="absolute inset-x-10 -bottom-px z-30 h-px w-[20%] bg-linear-to-r from-transparent via-cyan-300 to-transparent"
 							></div>
 							<div
-								class="absolute -bottom-px left-10 z-30 h-px w-[40%] bg-linear-to-r from-transparent via-sky-500 to-transparent"
+								class="absolute -bottom-px left-10 z-30 h-px w-[40%] bg-linear-to-r from-transparent via-cyan-500 to-transparent"
 							></div>
 							<div
 								class="relative z-30 whitespace-nowrap text-base font-bold text-white"

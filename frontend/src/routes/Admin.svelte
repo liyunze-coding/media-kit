@@ -46,7 +46,7 @@
 	const labelClass =
 		"flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400";
 	const controlClass =
-		"w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-violet-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-violet-400";
+		"w-full rounded-[10px] border border-gray-200 bg-white px-3 py-2.5 text-neutral-900 outline-none focus:border-cyan-600 dark:border-zinc-800 dark:bg-neutral-950 dark:text-neutral-50 dark:focus:border-cyan-400";
 	const cardClass =
 		"rounded-2xl border border-gray-200 bg-neutral-50 p-5 dark:border-zinc-800 dark:bg-neutral-900";
 	const primaryClass =
@@ -56,7 +56,7 @@
 	const dangerClass =
 		"cursor-pointer rounded-[10px] border border-gray-200 bg-transparent px-3 py-2.5 text-sm text-red-600 dark:border-zinc-800 dark:text-red-400";
 	const platformRowClass =
-		"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1.3fr)_7.5rem_9.5rem] lg:items-center lg:gap-3";
+		"grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1.3fr)_7.5rem] lg:items-center lg:gap-3";
 
 	const contentLabels: Record<string, string> = {
 		brand_name: "Brand name",
@@ -75,7 +75,6 @@
 		"profile_image_light_url",
 	] as const;
 	const reservedContentKeys = new Set<string>([
-		"twitch_avg_reach",
 		...profileImageKeys,
 		...primaryContentKeys,
 		...longContentKeys,
@@ -116,9 +115,6 @@
 		try {
 			const state = await fetchAdminState();
 			content = state.content;
-			if (content.twitch_avg_reach == null) {
-				content.twitch_avg_reach = "0";
-			}
 			platforms = state.platforms;
 			collabs = state.collabs ?? [];
 			twitchLocations = state.twitch_locations ?? [];
@@ -278,14 +274,8 @@
 			const payload = platforms.map((platform) => ({
 				...platform,
 				followers: Number(platform.followers) || 0,
-				avg_reach: Number(platform.avg_reach) || 0,
 			}));
-			const twitchAvgReach = String(
-				Math.max(0, Math.round(Number(content.twitch_avg_reach) || 0)),
-			);
 			platforms = await updatePlatforms(payload);
-			await updateContent({ twitch_avg_reach: twitchAvgReach });
-			content.twitch_avg_reach = twitchAvgReach;
 			message = "Platforms saved";
 		} catch (err) {
 			error =
@@ -510,8 +500,7 @@
 						<p
 							class="mt-1 text-sm text-gray-500 dark:text-gray-400"
 						>
-							Average reach is the previous 30 days. Twitch
-							followers update from Twitch.
+							Twitch followers update from Twitch.
 						</p>
 					</div>
 					<button class={primaryClass} onclick={handleSavePlatforms}>
@@ -520,15 +509,12 @@
 				</div>
 
 				<div
-					class="mb-2 hidden grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1.3fr)_7.5rem_9.5rem] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase lg:grid dark:text-gray-400"
+					class="mb-2 hidden grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1.3fr)_7.5rem] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase lg:grid dark:text-gray-400"
 				>
 					<span>Platform</span>
 					<span>Handle</span>
 					<span>URL</span>
 					<span>Followers</span>
-					<span title="Average reach (previous 30 days)"
-						>Avg reach</span
-					>
 				</div>
 
 				<div class="flex flex-col gap-3">
@@ -562,16 +548,6 @@
 								Live
 							</div>
 						</div>
-						<label class="{labelClass} min-w-0">
-							<span class="lg:sr-only">Avg reach (30 days)</span>
-							<input
-								class={controlClass}
-								type="number"
-								min="0"
-								step="1"
-								bind:value={content.twitch_avg_reach}
-							/>
-						</label>
 					</div>
 
 					{#each orderedPlatforms as platform (platform.name)}
@@ -610,18 +586,6 @@
 									min="0"
 									step="1"
 									bind:value={platforms[index].followers}
-								/>
-							</label>
-							<label class="{labelClass} min-w-0">
-								<span class="lg:sr-only"
-									>Avg reach (30 days)</span
-								>
-								<input
-									class={controlClass}
-									type="number"
-									min="0"
-									step="1"
-									bind:value={platforms[index].avg_reach}
 								/>
 							</label>
 						</div>

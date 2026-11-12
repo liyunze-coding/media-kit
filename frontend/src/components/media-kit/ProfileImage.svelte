@@ -10,9 +10,12 @@
 	} = $props();
 </script>
 
-<img
-	class="h-auto w-full max-w-75 rounded-xl object-cover shadow-lg shadow-cyan-500/60 dark:shadow-cyan-300 {className}"
-	{src}
-	{alt}
-	width="300"
-/>
+<div class="shrink-0 {className}">
+	<img
+		class="aspect-square w-44 rounded-full border-[5px] border-cyan-400 object-cover shadow-lg shadow-cyan-400/30 sm:w-56 dark:shadow-cyan-400/15"
+		{src}
+		{alt}
+		width="224"
+		height="224"
+	/>
+</div>

@@ -1,25 +1,32 @@
 <script lang="ts">
+	import type { Platform, TwitchData } from "../../lib/types";
+	import Platforms from "./Platforms.svelte";
+
 	let {
 		name = "RythonDev",
 		tagline = "",
+		platforms = [],
+		twitch = null,
 	}: {
 		name?: string;
 		tagline?: string;
+		platforms?: Platform[];
+		twitch?: TwitchData | null;
 	} = $props();
 </script>
 
-<div
-	class="w-full translate-y-2 rounded-lg border-2 border-cyan-500 sm:w-fit dark:border-cyan-300"
->
-	<div
-		class="-translate-y-2 rounded-xl bg-cyan-300 px-5 py-5 text-3xl text-black sm:-translate-x-8 sm:text-3xl lg:-translate-x-20"
+<div class="min-w-0 text-center sm:text-left">
+	<h1
+		class="text-5xl font-bold tracking-tight wrap-break-word text-neutral-900 sm:text-6xl lg:text-7xl dark:text-white"
 	>
-		Hi there, I'm <br />
-		<b>{name}</b>
-	</div>
+		{name}
+	</h1>
 	{#if tagline}
-		<p class="px-5 pb-2 text-xl text-cyan-700 dark:text-cyan-300">
+		<p class="mt-4 text-lg text-zinc-600 sm:text-xl dark:text-zinc-300">
 			{tagline}
 		</p>
 	{/if}
+	<div class="mt-8">
+		<Platforms {platforms} {twitch} />
+	</div>
 </div>

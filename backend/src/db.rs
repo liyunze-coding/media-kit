@@ -9,8 +9,6 @@ pub struct PlatformInput {
     pub handle: String,
     pub url: String,
     pub followers: i64,
-    #[serde(default)]
-    pub avg_reach: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,7 +38,6 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
             handle TEXT NOT NULL DEFAULT '',
             url TEXT NOT NULL DEFAULT '',
             followers INTEGER NOT NULL DEFAULT 0,
-            avg_reach INTEGER NOT NULL DEFAULT 0,
             updated_at INTEGER NOT NULL
         );
 
@@ -70,7 +67,7 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
 
 fn remove_retired_content(conn: &Connection) -> rusqlite::Result<()> {
     conn.execute(
-        "DELETE FROM content WHERE key IN ('demographics_age', 'demographics_gender', 'demographics_location')",
+        "DELETE FROM content WHERE key IN ('demographics_age', 'demographics_gender', 'demographics_location', 'twitch_avg_reach')",
         [],
     )?;
     Ok(())
@@ -78,23 +75,8 @@ fn remove_retired_content(conn: &Connection) -> rusqlite::Result<()> {
 
 fn migrate(conn: &Connection) -> rusqlite::Result<()> {
     if column_exists(conn, "platforms", "avg_reach")? {
-        return Ok(());
+        conn.execute("ALTER TABLE platforms DROP COLUMN avg_reach", [])?;
     }
-
-    conn.execute(
-        "ALTER TABLE platforms ADD COLUMN avg_reach INTEGER NOT NULL DEFAULT 0",
-        [],
-    )?;
-
-    // Applied once, when the column is added to an existing database.
-    let defaults = [("instagram", 1_000_i64), ("youtube", 10_000), ("tiktok", 5_000)];
-    for (name, avg_reach) in defaults {
-        conn.execute(
-            "UPDATE platforms SET avg_reach = ?1 WHERE name = ?2",
-            params![avg_reach, name],
-        )?;
-    }
-
     Ok(())
 }
 
@@ -122,7 +104,6 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
             "services",
             "Sponsored content\nProduct reviews\nLivestream integrations\nSocial media campaigns\nBrand partnerships\nEvent appearances",
         ),
-        ("twitch_avg_reach", "35"),
         ("stream_schedule", ""),
     ];
 
@@ -139,28 +120,25 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
             "@rythondev",
             "https://youtube.com/@rythondev",
             0,
-            10_000,
         ),
         (
             "tiktok",
             "@rythondev",
             "https://tiktok.com/@rythondev",
             0,
-            5_000,
         ),
         (
             "instagram",
             "@rythondev",
             "https://instagram.com/rythondev",
             0,
-            1_000,
         ),
     ];
 
-    for (name, handle, url, followers, avg_reach) in platform_defaults {
+    for (name, handle, url, followers) in platform_defaults {
         conn.execute(
-            "INSERT OR IGNORE INTO platforms (name, handle, url, followers, avg_reach, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![name, handle, url, followers, avg_reach, now],
+            "INSERT OR IGNORE INTO platforms (name, handle, url, followers, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![name, handle, url, followers, now],
         )?;
     }
 
@@ -213,7 +191,7 @@ pub fn get_content(conn: &Connection) -> rusqlite::Result<Value> {
 
 pub fn get_platforms(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
     let mut stmt = conn.prepare(
-        "SELECT name, handle, url, followers, avg_reach FROM platforms ORDER BY name",
+        "SELECT name, handle, url, followers FROM platforms ORDER BY name",
     )?;
 
     let rows = stmt.query_map([], |row| {
@@ -222,7 +200,6 @@ pub fn get_platforms(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
             "handle": row.get::<_, String>(1)?,
             "url": row.get::<_, String>(2)?,
             "followers": row.get::<_, i64>(3)?,
-            "avg_reach": row.get::<_, i64>(4)?,
         }))
     })?;
 
@@ -330,12 +307,11 @@ pub fn replace_twitch_locations(
 pub fn upsert_platforms(conn: &Connection, platforms: &[PlatformInput]) -> rusqlite::Result<()> {
     let now = now_secs();
     let mut stmt = conn.prepare(
-        "INSERT INTO platforms (name, handle, url, followers, avg_reach, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        "INSERT INTO platforms (name, handle, url, followers, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
          ON CONFLICT(name) DO UPDATE SET
              handle = excluded.handle,
              url = excluded.url,
              followers = excluded.followers,
-             avg_reach = excluded.avg_reach,
              updated_at = excluded.updated_at",
     )?;
 
@@ -345,7 +321,6 @@ pub fn upsert_platforms(conn: &Connection, platforms: &[PlatformInput]) -> rusql
             platform.handle,
             platform.url,
             platform.followers,
-            platform.avg_reach,
             now
         ])?;
     }

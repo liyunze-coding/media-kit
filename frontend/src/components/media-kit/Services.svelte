@@ -1,4 +1,6 @@
 <script lang="ts">
+    import Panel from "./Panel.svelte";
+
     let { services = "" }: { services?: string } = $props();
 
     let items = $derived(
@@ -10,20 +12,13 @@
 </script>
 
 {#if items.length}
-    <section class="w-full">
-        <div
-            class="mb-3 text-3xl font-bold text-neutral-900 sm:text-3xl dark:text-white"
+    <Panel title="Services">
+        <ul
+            class="list-disc space-y-2 pl-5 marker:text-cyan-500 dark:marker:text-cyan-400"
         >
-            Services
-        </div>
-        <div class="">
-            <ul
-                class="list-disc space-y-2 pl-5 marker:text-cyan-600 dark:marker:text-cyan-300"
-            >
-                {#each items as service}
-                    <li>{service}</li>
-                {/each}
-            </ul>
-        </div>
-    </section>
+            {#each items as service}
+                <li>{service}</li>
+            {/each}
+        </ul>
+    </Panel>
 {/if}

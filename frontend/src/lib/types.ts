@@ -3,7 +3,6 @@ export interface Platform {
   handle: string;
   url: string;
   followers: number;
-  avg_reach: number;
 }
 
 export interface Collab {
