@@ -33,7 +33,7 @@
                     aria-hidden="true"
                     class={[
                         name === "tiktok" && "dark:invert",
-                        "absolute inset-0 h-12 w-12 scale-110 opacity-60 blur-md group-hover:opacity-90 group-hover:blur-lg sm:h-14 sm:w-14",
+                        "absolute inset-0 h-12 w-12 scale-105 opacity-60 blur-md group-hover:opacity-90 group-hover:blur-lg sm:h-14 sm:w-14 dark:brightness-120",
                     ]}
                 />
                 <img
