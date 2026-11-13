@@ -38,6 +38,7 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
             handle TEXT NOT NULL DEFAULT '',
             url TEXT NOT NULL DEFAULT '',
             followers INTEGER NOT NULL DEFAULT 0,
+            sort_order INTEGER NOT NULL DEFAULT 0,
             updated_at INTEGER NOT NULL
         );
 
@@ -76,6 +77,16 @@ fn remove_retired_content(conn: &Connection) -> rusqlite::Result<()> {
 fn migrate(conn: &Connection) -> rusqlite::Result<()> {
     if column_exists(conn, "platforms", "avg_reach")? {
         conn.execute("ALTER TABLE platforms DROP COLUMN avg_reach", [])?;
+    }
+    if !column_exists(conn, "platforms", "sort_order")? {
+        conn.execute(
+            "ALTER TABLE platforms ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0",
+            [],
+        )?;
+        conn.execute(
+            "UPDATE platforms SET sort_order = (SELECT COUNT(*) FROM platforms p WHERE p.name < platforms.name)",
+            [],
+        )?;
     }
     Ok(())
 }
@@ -135,10 +146,10 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
         ),
     ];
 
-    for (name, handle, url, followers) in platform_defaults {
+    for (index, (name, handle, url, followers)) in platform_defaults.into_iter().enumerate() {
         conn.execute(
-            "INSERT OR IGNORE INTO platforms (name, handle, url, followers, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![name, handle, url, followers, now],
+            "INSERT OR IGNORE INTO platforms (name, handle, url, followers, sort_order, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![name, handle, url, followers, index as i64, now],
         )?;
     }
 
@@ -191,7 +202,7 @@ pub fn get_content(conn: &Connection) -> rusqlite::Result<Value> {
 
 pub fn get_platforms(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
     let mut stmt = conn.prepare(
-        "SELECT name, handle, url, followers FROM platforms ORDER BY name",
+        "SELECT name, handle, url, followers FROM platforms ORDER BY sort_order, name",
     )?;
 
     let rows = stmt.query_map([], |row| {
@@ -307,20 +318,22 @@ pub fn replace_twitch_locations(
 pub fn upsert_platforms(conn: &Connection, platforms: &[PlatformInput]) -> rusqlite::Result<()> {
     let now = now_secs();
     let mut stmt = conn.prepare(
-        "INSERT INTO platforms (name, handle, url, followers, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+        "INSERT INTO platforms (name, handle, url, followers, sort_order, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT(name) DO UPDATE SET
              handle = excluded.handle,
              url = excluded.url,
              followers = excluded.followers,
+             sort_order = excluded.sort_order,
              updated_at = excluded.updated_at",
     )?;
 
-    for platform in platforms {
+    for (index, platform) in platforms.iter().enumerate() {
         stmt.execute(params![
             platform.name,
             platform.handle,
             platform.url,
             platform.followers,
+            index as i64,
             now
         ])?;
     }

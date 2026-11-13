@@ -131,7 +131,9 @@
 				<div
 					class="mx-auto grid w-full h-full max-w-5xl grid-cols-1 gap-8 px-4 pt-12 sm:px-6 lg:grid-cols-2"
 				>
-					<div class="flex min-w-0 flex-col gap-8">
+					<div
+						class="flex min-w-0 flex-col justify-between items-start gap-8"
+					>
 						<About about={content.about ?? ""} />
 						<TwitchLocations locations={twitchLocations} />
 					</div>
