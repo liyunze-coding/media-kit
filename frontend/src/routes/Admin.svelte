@@ -300,7 +300,33 @@
     </header>
 
     {#if loading}
-        <div class="py-8 text-gray-500 dark:text-gray-400">Loading…</div>
+        <div
+            class="mt-10 flex animate-pulse flex-col gap-10"
+            aria-busy="true"
+            aria-label="Loading"
+        >
+            {#each [0, 1] as _}
+                <section
+                    class="border-t border-gray-200 pt-8 dark:border-zinc-800"
+                >
+                    <div
+                        class="mb-5 h-7 w-40 rounded bg-gray-200 dark:bg-zinc-800"
+                    ></div>
+                    <div class="flex flex-col gap-4">
+                        {#each [0, 1, 2] as _}
+                            <div class="flex flex-col gap-2">
+                                <div
+                                    class="h-4 w-24 rounded bg-gray-200 dark:bg-zinc-800"
+                                ></div>
+                                <div
+                                    class="h-10 w-full rounded-[10px] bg-gray-200 dark:bg-zinc-800"
+                                ></div>
+                            </div>
+                        {/each}
+                    </div>
+                </section>
+            {/each}
+        </div>
     {:else if !authed}
         <form class="mt-10 flex max-w-sm flex-col gap-4" onsubmit={handleLogin}>
             <div>

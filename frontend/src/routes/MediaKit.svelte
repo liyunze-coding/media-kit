@@ -108,14 +108,56 @@
 			</div>
 		</main>
 	{:else if !data}
-		<main class="mx-auto w-full max-w-230 px-6 pt-12 pb-18">
-			<div class="py-8 text-gray-500 dark:text-gray-400">Loading…</div>
+		<main
+			class="flex justify-center items-center"
+			aria-busy="true"
+			aria-label="Loading"
+		>
+			<div class="w-full max-w-5xl animate-pulse pb-5 lg:pb-12 lg:px-10">
+				<header
+					class="flex w-full flex-col items-center gap-10 px-6 pt-16 sm:flex-row sm:gap-12 sm:pt-20"
+				>
+					<div
+						class="size-40 shrink-0 rounded-full bg-gray-200 dark:bg-zinc-800"
+					></div>
+					<div
+						class="flex w-full flex-col items-center gap-4 sm:items-start"
+					>
+						<div
+							class="h-10 w-64 rounded-lg bg-gray-200 dark:bg-zinc-800"
+						></div>
+						<div
+							class="h-5 w-80 max-w-full rounded bg-gray-200 dark:bg-zinc-800"
+						></div>
+						<div class="flex gap-3">
+							{#each Array(4) as _}
+								<div
+									class="size-8 rounded-full bg-gray-200 dark:bg-zinc-800"
+								></div>
+							{/each}
+						</div>
+					</div>
+				</header>
+				<div
+					class="grid w-full grid-cols-1 gap-8 px-4 pt-12 sm:px-6 lg:grid-cols-2"
+				>
+					{#each [0, 1] as _}
+						<div class="flex flex-col gap-8">
+							{#each [0, 1] as _}
+								<div
+									class="h-48 rounded-[10px] bg-gray-200 dark:bg-zinc-800"
+								></div>
+							{/each}
+						</div>
+					{/each}
+				</div>
+			</div>
 		</main>
 	{:else}
 		<main class="flex justify-center items-center">
 			<div class="pb-5 lg:pb-12 lg:px-10" bind:this={mainEl}>
 				<header
-					class="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 px-6 pt-16 sm:flex-row sm:gap-12 sm:pt-20"
+					class="mx-auto flex w-full max-w-5xl flex-col items-center lg:items-start gap-10 px-6 pt-16 lg:flex-row lg:gap-12 lg:pt-20"
 				>
 					{#if profileImage}
 						<ProfileImage src={profileImage} alt={brandName} />
