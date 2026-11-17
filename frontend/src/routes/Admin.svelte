@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	import { fly } from "svelte/transition";
 	import {
 		clearStoredToken,
 		fetchAdminState,
@@ -144,6 +145,7 @@
 			twitchLocations = state.twitch_locations ?? [];
 			audienceGenders = state.audience_genders ?? [];
 			audienceAgeGenders = state.audience_age_genders ?? [];
+			saved = serialize();
 			authed = true;
 		} catch (err) {
 			authed = false;
@@ -178,14 +180,47 @@
 		twitchLocations = [];
 		audienceGenders = [];
 		audienceAgeGenders = [];
+		saved = serialize();
 		message = "";
 		error = "";
 	}
 
-	async function handleSaveContent() {
-		error = "";
-		message = "";
-		try {
+	function serialize() {
+		return {
+			content: JSON.stringify(content),
+			platforms: JSON.stringify(platforms),
+			collabs: JSON.stringify(collabs),
+			twitchLocations: JSON.stringify(twitchLocations),
+			audienceGenders: JSON.stringify(audienceGenders),
+			audienceAgeGenders: JSON.stringify(audienceAgeGenders),
+		};
+	}
+	type Section = keyof ReturnType<typeof serialize>;
+
+	let saved = $state(serialize());
+	let current = $derived(serialize());
+	let dirtySections = $derived(
+		(Object.keys(current) as Section[]).filter(
+			(section) => current[section] !== saved[section],
+		),
+	);
+	let saving = $state(false);
+
+	function markSaved(section: Section) {
+		saved[section] = serialize()[section];
+	}
+
+	function resetChanges() {
+		content = JSON.parse(saved.content);
+		platforms = JSON.parse(saved.platforms);
+		collabs = JSON.parse(saved.collabs);
+		twitchLocations = JSON.parse(saved.twitchLocations);
+		audienceGenders = JSON.parse(saved.audienceGenders);
+		audienceAgeGenders = JSON.parse(saved.audienceAgeGenders);
+	}
+
+	const savers: Record<Section, () => Promise<void>> = {
+		content: async () => {
 			const payload = Object.fromEntries(
 				Object.entries(content).map(([key, value]) => [
 					key,
@@ -193,16 +228,55 @@
 				]),
 			);
 			content = await updateContent(payload);
-			message = "Content saved";
+		},
+		platforms: async () => {
+			platforms = await updatePlatforms(
+				platforms.map((platform) => ({
+					...platform,
+					followers: Number(platform.followers) || 0,
+				})),
+			);
+		},
+		collabs: async () => {
+			collabs = await updateCollabs(collabs);
+		},
+		twitchLocations: async () => {
+			twitchLocations = await updateTwitchLocations(twitchLocations);
+		},
+		audienceGenders: async () => {
+			audienceGenders = await updateAudienceGenders(audienceGenders);
+		},
+		audienceAgeGenders: async () => {
+			audienceAgeGenders =
+				await updateAudienceAgeGenders(audienceAgeGenders);
+		},
+	};
+
+	async function saveChanges() {
+		if (saving) return;
+		error = "";
+		message = "";
+		saving = true;
+		try {
+			for (const section of dirtySections) {
+				await savers[section]();
+				markSaved(section);
+			}
+			message = "Changes saved";
 		} catch (err) {
 			error =
-				err instanceof Error ? err.message : "Unable to save content";
+				err instanceof Error ? err.message : "Unable to save changes";
+		} finally {
+			saving = false;
 		}
 	}
 
 	async function saveProfileImage(key: string, url: string) {
-		const saved = await updateContent({ [key]: url });
-		content[key] = saved[key] ?? "";
+		const result = await updateContent({ [key]: url });
+		content[key] = result[key] ?? "";
+		const savedContent = JSON.parse(saved.content);
+		savedContent[key] = content[key];
+		saved.content = JSON.stringify(savedContent);
 	}
 
 	async function handleProfileImageUpload(key: string, event: Event) {
@@ -256,20 +330,6 @@
 		collabs = next;
 	}
 
-	async function handleSaveCollabs() {
-		error = "";
-		message = "";
-		try {
-			collabs = await updateCollabs(collabs);
-			message = "Collaborations saved";
-		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: "Unable to save collaborations";
-		}
-	}
-
 	function addLocation() {
 		twitchLocations = [
 			...twitchLocations,
@@ -281,20 +341,6 @@
 		twitchLocations = twitchLocations.filter((_, i) => i !== index);
 	}
 
-	async function handleSaveLocations() {
-		error = "";
-		message = "";
-		try {
-			twitchLocations = await updateTwitchLocations(twitchLocations);
-			message = "Twitch locations saved";
-		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: "Unable to save Twitch locations";
-		}
-	}
-
 	function addGender() {
 		audienceGenders = [
 			...audienceGenders,
@@ -304,20 +350,6 @@
 
 	function removeGender(index: number) {
 		audienceGenders = audienceGenders.filter((_, i) => i !== index);
-	}
-
-	async function handleSaveGenders() {
-		error = "";
-		message = "";
-		try {
-			audienceGenders = await updateAudienceGenders(audienceGenders);
-			message = "Gender split saved";
-		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: "Unable to save gender split";
-		}
 	}
 
 	function addAgeGender() {
@@ -346,40 +378,9 @@
 	function removeAgeGender(index: number) {
 		audienceAgeGenders = audienceAgeGenders.filter((_, i) => i !== index);
 	}
-
-	async function handleSaveAgeGenders() {
-		error = "";
-		message = "";
-		try {
-			audienceAgeGenders =
-				await updateAudienceAgeGenders(audienceAgeGenders);
-			message = "Age ranges saved";
-		} catch (err) {
-			error =
-				err instanceof Error
-					? err.message
-					: "Unable to save age ranges";
-		}
-	}
-
-	async function handleSavePlatforms() {
-		error = "";
-		message = "";
-		try {
-			const payload = platforms.map((platform) => ({
-				...platform,
-				followers: Number(platform.followers) || 0,
-			}));
-			platforms = await updatePlatforms(payload);
-			message = "Platforms saved";
-		} catch (err) {
-			error =
-				err instanceof Error ? err.message : "Unable to save platforms";
-		}
-	}
 </script>
 
-<main class="mx-auto w-full max-w-6xl px-4 pt-10 pb-16 sm:px-6">
+<main class="mx-auto w-full max-w-6xl px-4 pt-10 pb-32 sm:px-6">
 	<header class="flex flex-wrap items-start justify-between gap-4">
 		<div>
 			<a class="text-4xl font-bold dark:text-neutral-50" href="/">
@@ -482,9 +483,6 @@
 							Name, bio, and services shown on the media kit.
 						</p>
 					</div>
-					<button class={primaryClass} onclick={handleSaveContent}>
-						Save
-					</button>
 				</div>
 
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -617,9 +615,6 @@
 							names to reorder, then save.
 						</p>
 					</div>
-					<button class={primaryClass} onclick={handleSavePlatforms}>
-						Save
-					</button>
 				</div>
 
 				<div
@@ -753,12 +748,6 @@
 						<button class={secondaryClass} onclick={addCollab}>
 							Add
 						</button>
-						<button
-							class={primaryClass}
-							onclick={handleSaveCollabs}
-						>
-							Save
-						</button>
 					</div>
 				</div>
 
@@ -860,12 +849,6 @@
 						<button class={secondaryClass} onclick={addLocation}>
 							Add
 						</button>
-						<button
-							class={primaryClass}
-							onclick={handleSaveLocations}
-						>
-							Save
-						</button>
 					</div>
 				</div>
 
@@ -938,12 +921,6 @@
 					<div class="flex items-center gap-2">
 						<button class={secondaryClass} onclick={addGender}>
 							Add
-						</button>
-						<button
-							class={primaryClass}
-							onclick={handleSaveGenders}
-						>
-							Save
 						</button>
 					</div>
 				</div>
@@ -1033,12 +1010,6 @@
 					<div class="flex items-center gap-2">
 						<button class={secondaryClass} onclick={addAgeGender}>
 							Add
-						</button>
-						<button
-							class={primaryClass}
-							onclick={handleSaveAgeGenders}
-						>
-							Save
 						</button>
 					</div>
 				</div>
@@ -1142,9 +1113,40 @@
 			</section>
 		</div>
 
+		{#if dirtySections.length}
+			<div
+				class="fixed inset-x-4 bottom-6 z-40 mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl bg-neutral-900 px-5 py-3 text-white shadow-2xl ring-1 ring-black/10 dark:bg-zinc-800 dark:ring-white/10"
+				role="region"
+				aria-label="Unsaved changes"
+				transition:fly={{ y: 80, duration: 200 }}
+			>
+				<span class="text-sm font-medium">
+					Careful — you have unsaved changes!
+				</span>
+				<div class="flex items-center gap-2">
+					<button
+						class="cursor-pointer rounded-[10px] px-3 py-2 text-sm font-medium text-white/80 hover:underline disabled:opacity-50"
+						disabled={saving}
+						onclick={resetChanges}
+					>
+						Reset
+					</button>
+					<button
+						class="cursor-pointer rounded-[10px] bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500 disabled:cursor-wait disabled:opacity-60"
+						disabled={saving}
+						onclick={saveChanges}
+					>
+						{saving ? "Saving…" : "Save Changes"}
+					</button>
+				</div>
+			</div>
+		{/if}
+
 		{#if message || error}
 			<div
-				class="fixed right-6 bottom-6 z-50 flex max-w-sm flex-col gap-2"
+				class="fixed right-6 z-50 flex max-w-sm flex-col gap-2 {dirtySections.length
+					? 'bottom-28'
+					: 'bottom-6'}"
 				role="status"
 				aria-live="polite"
 			>
