@@ -14,6 +14,8 @@
 	import Services from "../components/media-kit/Services.svelte";
 	import Stream from "../components/media-kit/Stream.svelte";
 	import TwitchLocations from "../components/media-kit/TwitchLocations.svelte";
+	import GenderPie from "../components/media-kit/GenderPie.svelte";
+	import AgeGenderBars from "../components/media-kit/AgeGenderBars.svelte";
 
 	const knownContentKeys = new Set([
 		"brand_name",
@@ -42,6 +44,8 @@
 	let collabs = $derived(data?.collabs ?? []);
 	let twitch = $derived(data?.twitch);
 	let twitchLocations = $derived(data?.twitch_locations ?? []);
+	let audienceGenders = $derived(data?.audience_genders ?? []);
+	let audienceAgeGenders = $derived(data?.audience_age_genders ?? []);
 	let brandName = $derived(content.brand_name || "RythonDev");
 	let profileImage = $derived(
 		(theme.current === "light"
@@ -178,9 +182,14 @@
 					>
 						<About about={content.about ?? ""} />
 						<TwitchLocations locations={twitchLocations} />
+
+						<AgeGenderBars
+							rows={audienceAgeGenders}
+							genders={audienceGenders}
+						/>
 					</div>
 					<div class="flex min-w-0 flex-col justify-between gap-8">
-						<Contact email={content.email ?? ""} />
+						<Contact email={content.email ?? ""} {downloading} />
 						{#if collabs.length}
 							<Panel title="Collaborations">
 								<div>
@@ -200,6 +209,7 @@
 							schedule={content.stream_schedule ?? ""}
 							{twitch}
 						/>
+						<GenderPie genders={audienceGenders} />
 					</div>
 				</div>
 			</div>

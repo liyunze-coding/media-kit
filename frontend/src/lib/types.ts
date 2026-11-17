@@ -18,6 +18,20 @@ export interface TwitchLocation {
   percent: number;
 }
 
+export interface AudienceGender {
+  id: number;
+  gender: string;
+  percent: number;
+  color?: string | null;
+}
+
+export interface AudienceAgeGender {
+  id: number;
+  age_range: string;
+  gender: string;
+  percent: number;
+}
+
 export interface LastStream {
   title?: string | null;
   game_name?: string | null;
@@ -50,6 +64,8 @@ export interface MediaKit {
   collabs: Collab[];
   twitch: TwitchData | null;
   twitch_locations: TwitchLocation[];
+  audience_genders: AudienceGender[];
+  audience_age_genders: AudienceAgeGender[];
 }
 
 export interface AdminState {
@@ -57,4 +73,6 @@ export interface AdminState {
   platforms: Platform[];
   collabs: Collab[];
   twitch_locations: TwitchLocation[];
+  audience_genders: AudienceGender[];
+  audience_age_genders: AudienceAgeGender[];
 }

@@ -24,6 +24,21 @@ pub struct TwitchLocationInput {
     pub percent: f64,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct AudienceGenderInput {
+    pub gender: String,
+    pub percent: f64,
+    #[serde(default)]
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AudienceAgeGenderInput {
+    pub age_range: String,
+    pub gender: String,
+    pub percent: f64,
+}
+
 pub fn init(conn: &Connection) -> rusqlite::Result<()> {
     conn.execute_batch(
         r#"
@@ -54,6 +69,24 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
         CREATE TABLE IF NOT EXISTS twitch_locations (
             id INTEGER PRIMARY KEY,
             country TEXT NOT NULL,
+            percent REAL NOT NULL DEFAULT 0,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS audience_genders (
+            id INTEGER PRIMARY KEY,
+            gender TEXT NOT NULL,
+            percent REAL NOT NULL DEFAULT 0,
+            color TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS audience_age_genders (
+            id INTEGER PRIMARY KEY,
+            age_range TEXT NOT NULL,
+            gender TEXT NOT NULL,
             percent REAL NOT NULL DEFAULT 0,
             sort_order INTEGER NOT NULL DEFAULT 0,
             updated_at INTEGER NOT NULL
@@ -305,6 +338,96 @@ pub fn replace_twitch_locations(
             stmt.execute(params![
                 location.country,
                 location.percent,
+                index as i64,
+                now
+            ])?;
+        }
+    }
+
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn get_audience_genders(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, gender, percent, color FROM audience_genders ORDER BY sort_order, id",
+    )?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok(json!({
+            "id": row.get::<_, i64>(0)?,
+            "gender": row.get::<_, String>(1)?,
+            "percent": row.get::<_, f64>(2)?,
+            "color": row.get::<_, Option<String>>(3)?,
+        }))
+    })?;
+
+    rows.collect()
+}
+
+pub fn replace_audience_genders(
+    conn: &mut Connection,
+    genders: &[AudienceGenderInput],
+) -> rusqlite::Result<()> {
+    let tx = conn.transaction()?;
+    tx.execute("DELETE FROM audience_genders", [])?;
+
+    let now = now_secs();
+    {
+        let mut stmt = tx.prepare(
+            "INSERT INTO audience_genders (gender, percent, color, sort_order, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+        )?;
+
+        for (index, gender) in genders.iter().enumerate() {
+            stmt.execute(params![
+                gender.gender,
+                gender.percent,
+                gender.color,
+                index as i64,
+                now
+            ])?;
+        }
+    }
+
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn get_audience_age_genders(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, age_range, gender, percent FROM audience_age_genders ORDER BY sort_order, id",
+    )?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok(json!({
+            "id": row.get::<_, i64>(0)?,
+            "age_range": row.get::<_, String>(1)?,
+            "gender": row.get::<_, String>(2)?,
+            "percent": row.get::<_, f64>(3)?,
+        }))
+    })?;
+
+    rows.collect()
+}
+
+pub fn replace_audience_age_genders(
+    conn: &mut Connection,
+    rows: &[AudienceAgeGenderInput],
+) -> rusqlite::Result<()> {
+    let tx = conn.transaction()?;
+    tx.execute("DELETE FROM audience_age_genders", [])?;
+
+    let now = now_secs();
+    {
+        let mut stmt = tx.prepare(
+            "INSERT INTO audience_age_genders (age_range, gender, percent, sort_order, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+        )?;
+
+        for (index, row) in rows.iter().enumerate() {
+            stmt.execute(params![
+                row.age_range,
+                row.gender,
+                row.percent,
                 index as i64,
                 now
             ])?;

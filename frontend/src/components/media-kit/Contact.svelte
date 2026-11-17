@@ -1,7 +1,10 @@
 <script lang="ts">
     import Panel from "./Panel.svelte";
 
-    let { email = "" }: { email?: string } = $props();
+    let {
+        email = "",
+        downloading = false,
+    }: { email?: string; downloading: boolean } = $props();
 
     let copied = $state(false);
     let copyTimer: ReturnType<typeof setTimeout> | undefined;
@@ -32,7 +35,7 @@
                     {email}
                 </a>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 {downloading ? 'hidden' : ''}">
                 <button
                     class="cursor-pointer rounded-full border border-zinc-300 px-4 py-2 text-sm transition-colors hover:border-cyan-500 dark:border-zinc-700 dark:hover:border-cyan-400"
                     onclick={copyEmail}

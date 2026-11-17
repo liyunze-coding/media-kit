@@ -90,6 +90,14 @@ async fn main() {
             put(api::admin_update_twitch_locations),
         )
         .route(
+            "/api/admin/audience/genders",
+            put(api::admin_update_audience_genders),
+        )
+        .route(
+            "/api/admin/audience/age-genders",
+            put(api::admin_update_audience_age_genders),
+        )
+        .route(
             "/api/admin/upload",
             post(api::admin_upload_image).layer(DefaultBodyLimit::max(api::MAX_UPLOAD_BYTES)),
         )

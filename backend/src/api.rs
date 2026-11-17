@@ -9,7 +9,10 @@ use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::auth::is_authorized;
-use crate::db::{self, CollabInput, PlatformInput, TwitchLocationInput};
+use crate::db::{
+    self, AudienceAgeGenderInput, AudienceGenderInput, CollabInput, PlatformInput,
+    TwitchLocationInput,
+};
 use crate::state::AppState;
 use crate::twitch;
 
@@ -70,6 +73,14 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
         db::get_twitch_locations(&conn).map_err(internal_error)?
     };
 
+    let (audience_genders, audience_age_genders) = {
+        let conn = state.db.lock().unwrap();
+        (
+            db::get_audience_genders(&conn).map_err(internal_error)?,
+            db::get_audience_age_genders(&conn).map_err(internal_error)?,
+        )
+    };
+
     let twitch = match twitch::get_twitch(&state).await {
         Ok(value) => value,
         Err(message) => json!({
@@ -86,6 +97,8 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
         "collabs": collabs,
         "twitch": twitch,
         "twitch_locations": twitch_locations,
+        "audience_genders": audience_genders,
+        "audience_age_genders": audience_age_genders,
     });
 
     state
@@ -114,12 +127,16 @@ pub async fn admin_get_state(
     let platforms = db::get_platforms(&conn).map_err(internal_error)?;
     let collabs = db::get_collabs(&conn).map_err(internal_error)?;
     let twitch_locations = db::get_twitch_locations(&conn).map_err(internal_error)?;
+    let audience_genders = db::get_audience_genders(&conn).map_err(internal_error)?;
+    let audience_age_genders = db::get_audience_age_genders(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({
         "content": content,
         "platforms": platforms,
         "collabs": collabs,
         "twitch_locations": twitch_locations,
+        "audience_genders": audience_genders,
+        "audience_age_genders": audience_age_genders,
     })))
 }
 
@@ -280,5 +297,104 @@ pub async fn admin_update_twitch_locations(
     let saved = db::get_twitch_locations(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({ "twitch_locations": saved })))
+}
+
+fn validate_percent(percent: f64) -> Result<(), ApiError> {
+    if !percent.is_finite() || !(0.0..=100.0).contains(&percent) {
+        return Err(bad_request("Percentages must be between 0 and 100"));
+    }
+    Ok(())
+}
+
+fn validate_total(total: f64) -> Result<(), ApiError> {
+    if total > 100.0 + 1e-6 {
+        return Err(bad_request("Percentages add up to more than 100"));
+    }
+    Ok(())
+}
+
+pub async fn admin_update_audience_genders(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(genders): Json<Vec<AudienceGenderInput>>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&state, &headers)?;
+
+    let mut cleaned = Vec::with_capacity(genders.len());
+    for entry in genders {
+        let gender = entry.gender.trim().to_string();
+        let color = entry
+            .color
+            .map(|color| color.trim().to_string())
+            .filter(|color| !color.is_empty());
+
+        if gender.is_empty() && entry.percent == 0.0 {
+            continue;
+        }
+        if gender.is_empty() {
+            return Err(bad_request("Each gender row needs a name"));
+        }
+        validate_percent(entry.percent)?;
+
+        cleaned.push(AudienceGenderInput {
+            gender,
+            percent: entry.percent,
+            color,
+        });
+    }
+    validate_total(cleaned.iter().map(|entry| entry.percent).sum())?;
+
+    {
+        let mut conn = state.db.lock().unwrap();
+        db::replace_audience_genders(&mut conn, &cleaned).map_err(internal_error)?;
+    }
+
+    state.cache.invalidate(MEDIA_KIT_CACHE_KEY);
+
+    let conn = state.db.lock().unwrap();
+    let saved = db::get_audience_genders(&conn).map_err(internal_error)?;
+
+    Ok(Json(json!({ "audience_genders": saved })))
+}
+
+pub async fn admin_update_audience_age_genders(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(rows): Json<Vec<AudienceAgeGenderInput>>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&state, &headers)?;
+
+    let mut cleaned = Vec::with_capacity(rows.len());
+    for row in rows {
+        let age_range = row.age_range.trim().to_string();
+        let gender = row.gender.trim().to_string();
+
+        if age_range.is_empty() && gender.is_empty() && row.percent == 0.0 {
+            continue;
+        }
+        if age_range.is_empty() || gender.is_empty() {
+            return Err(bad_request("Each age row needs an age range and gender"));
+        }
+        validate_percent(row.percent)?;
+
+        cleaned.push(AudienceAgeGenderInput {
+            age_range,
+            gender,
+            percent: row.percent,
+        });
+    }
+    validate_total(cleaned.iter().map(|row| row.percent).sum())?;
+
+    {
+        let mut conn = state.db.lock().unwrap();
+        db::replace_audience_age_genders(&mut conn, &cleaned).map_err(internal_error)?;
+    }
+
+    state.cache.invalidate(MEDIA_KIT_CACHE_KEY);
+
+    let conn = state.db.lock().unwrap();
+    let saved = db::get_audience_age_genders(&conn).map_err(internal_error)?;
+
+    Ok(Json(json!({ "audience_age_genders": saved })))
 }
 

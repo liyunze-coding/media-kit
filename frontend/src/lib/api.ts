@@ -1,5 +1,7 @@
 import type {
   AdminState,
+  AudienceAgeGender,
+  AudienceGender,
   Collab,
   MediaKit,
   Platform,
@@ -155,5 +157,57 @@ export async function updateTwitchLocations(
 
   const data = await res.json();
   return data.twitch_locations;
+}
+
+export async function updateAudienceGenders(
+  genders: AudienceGender[],
+): Promise<AudienceGender[]> {
+  const res = await fetch("/api/admin/audience/genders", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(
+      genders.map(({ gender, percent, color }) => ({
+        gender,
+        percent: Number(percent) || 0,
+        color: color || null,
+      })),
+    ),
+  });
+
+  if (res.status === 401) {
+    clearStoredToken();
+    throw new Error("unauthorized");
+  }
+  if (!res.ok)
+    throw new Error(await readError(res, "Failed to save gender split"));
+
+  const data = await res.json();
+  return data.audience_genders;
+}
+
+export async function updateAudienceAgeGenders(
+  rows: AudienceAgeGender[],
+): Promise<AudienceAgeGender[]> {
+  const res = await fetch("/api/admin/audience/age-genders", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(
+      rows.map(({ age_range, gender, percent }) => ({
+        age_range,
+        gender,
+        percent: Number(percent) || 0,
+      })),
+    ),
+  });
+
+  if (res.status === 401) {
+    clearStoredToken();
+    throw new Error("unauthorized");
+  }
+  if (!res.ok)
+    throw new Error(await readError(res, "Failed to save age ranges"));
+
+  const data = await res.json();
+  return data.audience_age_genders;
 }
 
