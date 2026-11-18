@@ -23,7 +23,9 @@
 			segments,
 			total: segments.reduce((sum, segment) => sum + segment.percent, 0),
 		}));
-		const used = new Set(bars.flatMap((bar) => bar.segments.map((s) => s.gender)));
+		const used = new Set(
+			bars.flatMap((bar) => bar.segments.map((s) => s.gender)),
+		);
 		const legend = [...colors].filter(([gender]) => used.has(gender));
 		return { bars, colors, legend };
 	});
@@ -50,25 +52,35 @@
 			<ul class="space-y-4">
 				{#each chart.bars as bar (bar.ageRange)}
 					<li class="text-sm">
-						<div class="mb-1.5 flex items-baseline justify-between gap-3">
+						<div
+							class="mb-1.5 flex items-baseline justify-between gap-3"
+						>
 							<span class="truncate">{bar.ageRange}</span>
 							<span class="font-semibold tabular-nums">
 								{formatPercent(bar.total)}
 							</span>
 						</div>
 						<div
-							class="h-3 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+							class="h-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
 						>
 							<div
 								class="flex h-full overflow-hidden rounded-full transition-[width] duration-1000 ease-out motion-reduce:transition-none"
-								style:width={visible ? `${Math.min(bar.total, 100)}%` : "0%"}
+								style:width={visible
+									? `${Math.min(bar.total, 100)}%`
+									: "0%"}
 							>
 								{#each bar.segments as segment}
 									<div
 										class="h-full"
-										style:width="{(segment.percent / bar.total) * 100}%"
-										style:background-color={chart.colors.get(segment.gender)}
-										title="{segment.gender}: {formatPercent(segment.percent)}"
+										style:width="{(segment.percent /
+											bar.total) *
+											100}%"
+										style:background-color={chart.colors.get(
+											segment.gender,
+										)}
+										title="{segment.gender}: {formatPercent(
+											segment.percent,
+										)}"
 									></div>
 								{/each}
 							</div>
