@@ -79,18 +79,6 @@
 							</div>
 						{/if}
 					</div>
-					{#if twitch?.viewer_count != null}
-						<div class="shrink-0 text-right">
-							<div class="font-semibold tabular-nums">
-								{formatCount(twitch.viewer_count)}
-							</div>
-							<div
-								class="text-xs text-zinc-500 dark:text-zinc-400"
-							>
-								watching
-							</div>
-						</div>
-					{/if}
 				</a>
 			{:else if lastStream}
 				<a
