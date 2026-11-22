@@ -29,10 +29,7 @@ export async function fetchMediaKit(): Promise<MediaKit> {
   return res.json();
 }
 
-export async function verifyAdmin(
-  username: string,
-  password: string,
-): Promise<boolean> {
+export async function verifyAdmin(username: string, password: string): Promise<boolean> {
   const token = btoa(`${username}:${password}`);
   const res = await fetch("/api/admin/verify", {
     headers: { Authorization: `Basic ${token}` },
@@ -73,9 +70,7 @@ export async function updateContent(
   return data.content;
 }
 
-export async function updatePlatforms(
-  platforms: Platform[],
-): Promise<Platform[]> {
+export async function updatePlatforms(platforms: Platform[]): Promise<Platform[]> {
   const res = await fetch("/api/admin/platforms", {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -119,9 +114,7 @@ export async function updateCollabs(collabs: Collab[]): Promise<Collab[]> {
   const res = await fetch("/api/admin/collabs", {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify(
-      collabs.map(({ name, image, url }) => ({ name, image, url })),
-    ),
+    body: JSON.stringify(collabs.map(({ name, image, url }) => ({ name, image, url }))),
   });
 
   if (res.status === 401) {
@@ -152,16 +145,13 @@ export async function updateTwitchLocations(
     clearStoredToken();
     throw new Error("unauthorized");
   }
-  if (!res.ok)
-    throw new Error(await readError(res, "Failed to save Twitch locations"));
+  if (!res.ok) throw new Error(await readError(res, "Failed to save Twitch locations"));
 
   const data = await res.json();
   return data.twitch_locations;
 }
 
-export async function updateAudienceGenders(
-  genders: AudienceGender[],
-): Promise<AudienceGender[]> {
+export async function updateAudienceGenders(genders: AudienceGender[]): Promise<AudienceGender[]> {
   const res = await fetch("/api/admin/audience/genders", {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -178,8 +168,7 @@ export async function updateAudienceGenders(
     clearStoredToken();
     throw new Error("unauthorized");
   }
-  if (!res.ok)
-    throw new Error(await readError(res, "Failed to save gender split"));
+  if (!res.ok) throw new Error(await readError(res, "Failed to save gender split"));
 
   const data = await res.json();
   return data.audience_genders;
@@ -204,10 +193,8 @@ export async function updateAudienceAgeGenders(
     clearStoredToken();
     throw new Error("unauthorized");
   }
-  if (!res.ok)
-    throw new Error(await readError(res, "Failed to save age ranges"));
+  if (!res.ok) throw new Error(await readError(res, "Failed to save age ranges"));
 
   const data = await res.json();
   return data.audience_age_genders;
 }
-
