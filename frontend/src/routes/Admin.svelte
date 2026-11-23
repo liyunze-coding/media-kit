@@ -38,6 +38,7 @@
 	let twitchLocations = $state<TwitchLocation[]>([]);
 	let nextLocationId = -1;
 	let uploadingKey = $state<string | null>(null);
+	let uploadingCollabId = $state<number | null>(null);
 	let locationTotal = $derived(
 		twitchLocations.reduce(
 			(sum, location) => sum + (Number(location.percent) || 0),
@@ -308,6 +309,25 @@
 		} catch (err) {
 			error =
 				err instanceof Error ? err.message : "Unable to remove image";
+		}
+	}
+
+	async function handleCollabImageUpload(collab: Collab, event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = "";
+		if (!file) return;
+
+		error = "";
+		message = "";
+		uploadingCollabId = collab.id;
+		try {
+			collab.image = await uploadImage(file);
+		} catch (err) {
+			error =
+				err instanceof Error ? err.message : "Unable to upload image";
+		} finally {
+			uploadingCollabId = null;
 		}
 	}
 
@@ -757,7 +777,7 @@
 					</p>
 				{:else}
 					<div
-						class="mb-2 hidden grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase md:grid dark:text-gray-400"
+						class="mb-2 hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase md:grid dark:text-gray-400"
 					>
 						<span>Name</span>
 						<span>Image</span>
@@ -767,7 +787,7 @@
 					<div class="flex flex-col gap-3">
 						{#each collabs as collab, index (collab.id)}
 							<div
-								class="{cardClass} grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center md:gap-3"
+								class="{cardClass} grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] md:items-center md:gap-3"
 							>
 								<label class="{labelClass} min-w-0">
 									<span class="md:sr-only">Name</span>
@@ -776,22 +796,46 @@
 										bind:value={collab.name}
 									/>
 								</label>
-								<label class="{labelClass} min-w-0">
+								<div class="{labelClass} min-w-0">
 									<span class="md:sr-only">Image</span>
 									<div class="flex items-center gap-3">
-										<input
-											class={controlClass}
-											bind:value={collab.image}
-										/>
 										{#if collab.image}
 											<img
 												class="h-10 w-10 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-zinc-800"
 												src={collab.image}
 												alt=""
 											/>
+										{:else}
+											<div
+												class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-gray-300 dark:border-zinc-700"
+											></div>
 										{/if}
+										<label
+											class="{secondaryClass} {uploadingCollabId ===
+											collab.id
+												? 'pointer-events-none opacity-50'
+												: ''}"
+										>
+											{uploadingCollabId === collab.id
+												? "Uploading…"
+												: collab.image
+													? "Replace"
+													: "Upload"}
+											<input
+												class="sr-only"
+												type="file"
+												accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+												disabled={uploadingCollabId !==
+													null}
+												onchange={(event) =>
+													handleCollabImageUpload(
+														collab,
+														event,
+													)}
+											/>
+										</label>
 									</div>
-								</label>
+								</div>
 								<label class="{labelClass} min-w-0">
 									<span class="md:sr-only">URL</span>
 									<input
