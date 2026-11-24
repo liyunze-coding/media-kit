@@ -10,8 +10,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::auth::is_authorized;
 use crate::db::{
-    self, AudienceAgeGenderInput, AudienceGenderInput, CollabInput, PlatformInput,
-    TwitchLocationInput,
+    self, AudienceAgeGenderInput, AudienceGenderInput, CollabInput, MonthlyViewsInput,
+    PlatformInput, TwitchLocationInput,
 };
 use crate::state::AppState;
 use crate::twitch;
@@ -73,11 +73,12 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
         db::get_twitch_locations(&conn).map_err(internal_error)?
     };
 
-    let (audience_genders, audience_age_genders) = {
+    let (audience_genders, audience_age_genders, monthly_views) = {
         let conn = state.db.lock().unwrap();
         (
             db::get_audience_genders(&conn).map_err(internal_error)?,
             db::get_audience_age_genders(&conn).map_err(internal_error)?,
+            db::get_monthly_views(&conn).map_err(internal_error)?,
         )
     };
 
@@ -94,6 +95,7 @@ pub async fn get_media_kit(State(state): State<AppState>) -> Result<Json<Value>,
     let payload = json!({
         "content": content,
         "platforms": platforms,
+        "monthly_views": monthly_views,
         "collabs": collabs,
         "twitch": twitch,
         "twitch_locations": twitch_locations,
@@ -125,6 +127,7 @@ pub async fn admin_get_state(
     let conn = state.db.lock().unwrap();
     let content = db::get_content(&conn).map_err(internal_error)?;
     let platforms = db::get_platforms(&conn).map_err(internal_error)?;
+    let monthly_views = db::get_monthly_views(&conn).map_err(internal_error)?;
     let collabs = db::get_collabs(&conn).map_err(internal_error)?;
     let twitch_locations = db::get_twitch_locations(&conn).map_err(internal_error)?;
     let audience_genders = db::get_audience_genders(&conn).map_err(internal_error)?;
@@ -133,6 +136,7 @@ pub async fn admin_get_state(
     Ok(Json(json!({
         "content": content,
         "platforms": platforms,
+        "monthly_views": monthly_views,
         "collabs": collabs,
         "twitch_locations": twitch_locations,
         "audience_genders": audience_genders,
@@ -180,6 +184,42 @@ pub async fn admin_update_platforms(
     let saved = db::get_platforms(&conn).map_err(internal_error)?;
 
     Ok(Json(json!({ "platforms": saved })))
+}
+
+pub async fn admin_update_monthly_views(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(entries): Json<Vec<MonthlyViewsInput>>,
+) -> Result<Json<Value>, ApiError> {
+    require_admin(&state, &headers)?;
+
+    let mut cleaned = Vec::with_capacity(entries.len());
+    for entry in entries {
+        let platform = entry.platform.trim().to_lowercase();
+        if platform.is_empty() {
+            return Err(bad_request("Each view entry needs a platform"));
+        }
+        if entry.views < 0 {
+            return Err(bad_request("View counts must be 0 or greater"));
+        }
+
+        cleaned.push(MonthlyViewsInput {
+            platform,
+            views: entry.views,
+        });
+    }
+
+    {
+        let conn = state.db.lock().unwrap();
+        db::upsert_monthly_views(&conn, &cleaned).map_err(internal_error)?;
+    }
+
+    state.cache.invalidate(MEDIA_KIT_CACHE_KEY);
+
+    let conn = state.db.lock().unwrap();
+    let saved = db::get_monthly_views(&conn).map_err(internal_error)?;
+
+    Ok(Json(json!({ "monthly_views": saved })))
 }
 
 pub async fn admin_update_collabs(

@@ -5,6 +5,11 @@ export interface Platform {
   followers: number;
 }
 
+export interface MonthlyViews {
+  platform: string;
+  views: number;
+}
+
 export interface Collab {
   id: number;
   name: string;
@@ -61,6 +66,7 @@ export interface TwitchData {
 export interface MediaKit {
   content: Record<string, string>;
   platforms: Platform[];
+  monthly_views: MonthlyViews[];
   collabs: Collab[];
   twitch: TwitchData | null;
   twitch_locations: TwitchLocation[];
@@ -71,6 +77,7 @@ export interface MediaKit {
 export interface AdminState {
   content: Record<string, string>;
   platforms: Platform[];
+  monthly_views: MonthlyViews[];
   collabs: Collab[];
   twitch_locations: TwitchLocation[];
   audience_genders: AudienceGender[];

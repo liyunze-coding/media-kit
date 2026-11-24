@@ -12,6 +12,12 @@ pub struct PlatformInput {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct MonthlyViewsInput {
+    pub platform: String,
+    pub views: i64,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct CollabInput {
     pub name: String,
     pub image: String,
@@ -88,6 +94,13 @@ pub fn init(conn: &Connection) -> rusqlite::Result<()> {
             age_range TEXT NOT NULL,
             gender TEXT NOT NULL,
             percent REAL NOT NULL DEFAULT 0,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS monthly_views (
+            platform TEXT PRIMARY KEY,
+            views INTEGER NOT NULL DEFAULT 0,
             sort_order INTEGER NOT NULL DEFAULT 0,
             updated_at INTEGER NOT NULL
         );
@@ -183,6 +196,14 @@ fn seed(conn: &Connection) -> rusqlite::Result<()> {
         conn.execute(
             "INSERT OR IGNORE INTO platforms (name, handle, url, followers, sort_order, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![name, handle, url, followers, index as i64, now],
+        )?;
+    }
+
+    let monthly_views_defaults = ["twitch", "instagram", "tiktok", "youtube"];
+    for (index, platform) in monthly_views_defaults.into_iter().enumerate() {
+        conn.execute(
+            "INSERT OR IGNORE INTO monthly_views (platform, views, sort_order, updated_at) VALUES (?1, 0, ?2, ?3)",
+            params![platform, index as i64, now],
         )?;
     }
 
@@ -459,6 +480,41 @@ pub fn upsert_platforms(conn: &Connection, platforms: &[PlatformInput]) -> rusql
             index as i64,
             now
         ])?;
+    }
+
+    Ok(())
+}
+
+pub fn get_monthly_views(conn: &Connection) -> rusqlite::Result<Vec<Value>> {
+    let mut stmt = conn.prepare(
+        "SELECT platform, views FROM monthly_views ORDER BY sort_order, platform",
+    )?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok(json!({
+            "platform": row.get::<_, String>(0)?,
+            "views": row.get::<_, i64>(1)?,
+        }))
+    })?;
+
+    rows.collect()
+}
+
+pub fn upsert_monthly_views(
+    conn: &Connection,
+    entries: &[MonthlyViewsInput],
+) -> rusqlite::Result<()> {
+    let now = now_secs();
+    let mut stmt = conn.prepare(
+        "INSERT INTO monthly_views (platform, views, sort_order, updated_at) VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(platform) DO UPDATE SET
+             views = excluded.views,
+             sort_order = excluded.sort_order,
+             updated_at = excluded.updated_at",
+    )?;
+
+    for (index, entry) in entries.iter().enumerate() {
+        stmt.execute(params![entry.platform, entry.views, index as i64, now])?;
     }
 
     Ok(())

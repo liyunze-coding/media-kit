@@ -4,6 +4,7 @@ import type {
   AudienceGender,
   Collab,
   MediaKit,
+  MonthlyViews,
   Platform,
   TwitchLocation,
 } from "./types";
@@ -85,6 +86,28 @@ export async function updatePlatforms(platforms: Platform[]): Promise<Platform[]
 
   const data = await res.json();
   return data.platforms;
+}
+
+export async function updateMonthlyViews(entries: MonthlyViews[]): Promise<MonthlyViews[]> {
+  const res = await fetch("/api/admin/monthly-views", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(
+      entries.map(({ platform, views }) => ({
+        platform,
+        views: Math.max(0, Math.round(Number(views) || 0)),
+      })),
+    ),
+  });
+
+  if (res.status === 401) {
+    clearStoredToken();
+    throw new Error("unauthorized");
+  }
+  if (!res.ok) throw new Error(await readError(res, "Failed to save 30-day views"));
+
+  const data = await res.json();
+  return data.monthly_views;
 }
 
 async function readError(res: Response, fallback: string): Promise<string> {

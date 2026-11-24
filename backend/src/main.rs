@@ -84,6 +84,10 @@ async fn main() {
         .route("/api/admin/state", get(api::admin_get_state))
         .route("/api/admin/content", put(api::admin_update_content))
         .route("/api/admin/platforms", put(api::admin_update_platforms))
+        .route(
+            "/api/admin/monthly-views",
+            put(api::admin_update_monthly_views),
+        )
         .route("/api/admin/collabs", put(api::admin_update_collabs))
         .route(
             "/api/admin/twitch-locations",

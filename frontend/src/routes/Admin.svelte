@@ -7,6 +7,7 @@
 		getStoredToken,
 		updateCollabs,
 		updateContent,
+		updateMonthlyViews,
 		updatePlatforms,
 		updateAudienceAgeGenders,
 		updateAudienceGenders,
@@ -15,10 +16,12 @@
 		verifyAdmin,
 	} from "../lib/api";
 	import { genderColors } from "../lib/chart";
+	import { platformDisplayName, platformImageMap } from "../lib/platforms";
 	import type {
 		AudienceAgeGender,
 		AudienceGender,
 		Collab,
+		MonthlyViews,
 		Platform,
 		TwitchLocation,
 	} from "../lib/types";
@@ -33,6 +36,10 @@
 
 	let content = $state<Record<string, string>>({});
 	let platforms = $state<Platform[]>([]);
+	let monthlyViews = $state<MonthlyViews[]>([]);
+	let monthlyViewsTotal = $derived(
+		monthlyViews.reduce((sum, entry) => sum + (Number(entry.views) || 0), 0),
+	);
 	let collabs = $state<Collab[]>([]);
 	let nextCollabId = -1;
 	let twitchLocations = $state<TwitchLocation[]>([]);
@@ -119,6 +126,16 @@
 		next.splice(to, 0, moved);
 		platforms = next;
 	}
+
+	let draggedMonthlyView = $state<number | null>(null);
+
+	function moveMonthlyView(from: number, to: number) {
+		if (from === to) return;
+		const next = [...monthlyViews];
+		const [moved] = next.splice(from, 1);
+		next.splice(to, 0, moved);
+		monthlyViews = next;
+	}
 	let extraContentKeys = $derived(
 		Object.keys(content)
 			.filter((key) => !reservedContentKeys.has(key))
@@ -142,6 +159,7 @@
 			const state = await fetchAdminState();
 			content = state.content;
 			platforms = state.platforms;
+			monthlyViews = state.monthly_views ?? [];
 			collabs = state.collabs ?? [];
 			twitchLocations = state.twitch_locations ?? [];
 			audienceGenders = state.audience_genders ?? [];
@@ -177,6 +195,7 @@
 		authed = false;
 		content = {};
 		platforms = [];
+		monthlyViews = [];
 		collabs = [];
 		twitchLocations = [];
 		audienceGenders = [];
@@ -190,6 +209,7 @@
 		return {
 			content: JSON.stringify(content),
 			platforms: JSON.stringify(platforms),
+			monthlyViews: JSON.stringify(monthlyViews),
 			collabs: JSON.stringify(collabs),
 			twitchLocations: JSON.stringify(twitchLocations),
 			audienceGenders: JSON.stringify(audienceGenders),
@@ -214,6 +234,7 @@
 	function resetChanges() {
 		content = JSON.parse(saved.content);
 		platforms = JSON.parse(saved.platforms);
+		monthlyViews = JSON.parse(saved.monthlyViews);
 		collabs = JSON.parse(saved.collabs);
 		twitchLocations = JSON.parse(saved.twitchLocations);
 		audienceGenders = JSON.parse(saved.audienceGenders);
@@ -237,6 +258,9 @@
 					followers: Number(platform.followers) || 0,
 				})),
 			);
+		},
+		monthlyViews: async () => {
+			monthlyViews = await updateMonthlyViews(monthlyViews);
 		},
 		collabs: async () => {
 			collabs = await updateCollabs(collabs);
@@ -743,6 +767,95 @@
 									min="0"
 									step="1"
 									bind:value={platforms[index].followers}
+								/>
+							</label>
+						</div>
+					{/each}
+				</div>
+			</section>
+
+			<section class="border-t border-gray-200 pt-8 dark:border-zinc-800">
+				<div
+					class="mb-5 flex flex-wrap items-end justify-between gap-3"
+				>
+					<div>
+						<h2 class="text-xl font-semibold tracking-tight">
+							Past 30 Days Views
+						</h2>
+						<p
+							class="mt-1 text-sm text-gray-500 dark:text-gray-400"
+						>
+							Total view count for the past 30 days ·
+							{monthlyViewsTotal.toLocaleString()} total. Drag platform
+							names to reorder.
+						</p>
+					</div>
+				</div>
+
+				<div
+					class="mb-2 hidden grid-cols-[minmax(0,1fr)_12rem] gap-3 px-5 text-xs font-medium tracking-wide text-gray-500 uppercase sm:grid dark:text-gray-400"
+				>
+					<span>Platform</span>
+					<span>Views (30 days)</span>
+				</div>
+
+				<div class="flex flex-col gap-3">
+					{#each monthlyViews as entry, index (entry.platform)}
+						{@const deco =
+							platformImageMap[entry.platform.toLowerCase()]}
+						<div
+							role="listitem"
+							class="{cardClass} grid grid-cols-1 gap-4 transition-opacity sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center sm:gap-3"
+							class:opacity-50={draggedMonthlyView === index}
+							ondragover={(event) => {
+								if (draggedMonthlyView === null) return;
+								event.preventDefault();
+								moveMonthlyView(draggedMonthlyView, index);
+								draggedMonthlyView = index;
+							}}
+							ondrop={(event) => event.preventDefault()}
+						>
+							<div
+								class="flex cursor-grab items-center gap-2 text-sm font-semibold select-none active:cursor-grabbing"
+								draggable="true"
+								role="button"
+								tabindex="-1"
+								aria-label="Drag to reorder {platformDisplayName(
+									entry.platform,
+								)}"
+								ondragstart={(event) => {
+									draggedMonthlyView = index;
+									event.dataTransfer?.setData(
+										"text/plain",
+										entry.platform,
+									);
+									if (event.dataTransfer)
+										event.dataTransfer.effectAllowed =
+											"move";
+								}}
+								ondragend={() => (draggedMonthlyView = null)}
+							>
+								<span class="text-gray-400" aria-hidden="true"
+									>⋮⋮</span
+								>
+								{#if deco}
+									<img
+										src={deco.image}
+										alt=""
+										aria-hidden="true"
+										class="size-5 shrink-0"
+									/>
+								{/if}
+								{platformDisplayName(entry.platform)}
+							</div>
+							<label class="{labelClass} min-w-0">
+								<span class="sm:sr-only">Views (30 days)</span>
+								<input
+									class={controlClass}
+									type="number"
+									min="0"
+									step="1"
+									bind:value={monthlyViews[index].views}
 								/>
 							</label>
 						</div>
