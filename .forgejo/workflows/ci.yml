@@ -5,7 +5,7 @@ name: CI
 # someone clicks Approve on a fork.
 #
 # Forks are not built until a maintainer adds the `ci` label. Review Dockerfile,
-# the frontend package files, and the backend Cargo files before adding it. New
+# the frontend package files, and the backend package files before adding it. New
 # commits do not reuse that label; remove it and add it again after reviewing.
 on:
   pull_request_target:

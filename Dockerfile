@@ -8,26 +8,25 @@ RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
-# ---- Backend build ----
-FROM rust:1.98-alpine AS backend
+# ---- Backend dependencies ----
+FROM oven/bun:1-alpine AS backend-deps
 WORKDIR /app/backend
 
-COPY backend/Cargo.toml backend/Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release
-
-COPY backend/src ./src
-RUN touch src/main.rs && cargo build --release
+COPY backend/package.json backend/bun.lock ./
+RUN bun install --frozen-lockfile --production
 
 # ---- Runtime ----
-FROM alpine:3.20
+FROM oven/bun:1-alpine
 RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
-COPY --from=backend /app/backend/target/release/backend ./backend
+COPY --from=backend-deps /app/backend/node_modules ./backend/node_modules
+COPY backend/package.json backend/tsconfig.json ./backend/
+COPY backend/src ./backend/src
 COPY --from=frontend /app/frontend/dist ./frontend/dist
 
-ENV STATIC_DIR=/app/frontend/dist \
+ENV NODE_ENV=production \
+    STATIC_DIR=/app/frontend/dist \
     DATABASE_PATH=/app/data/media_kit.db
 
 RUN addgroup -S app \
@@ -38,4 +37,4 @@ RUN addgroup -S app \
 USER app
 EXPOSE 3000
 
-CMD ["./backend"]
+CMD ["bun", "run", "backend/src/index.ts"]
