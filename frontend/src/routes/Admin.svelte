@@ -291,6 +291,10 @@
                 markSaved(section);
             }
             message = "Changes saved";
+
+            setTimeout(() => {
+                message = "";
+            }, 3000);
         } catch (err) {
             error =
                 err instanceof Error ? err.message : "Unable to save changes";
